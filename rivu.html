@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Auto Trigger Runner - Dark J</title>
+<style>
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans Bengali",sans-serif;background:#0b1020;color:#e6eef8;padding:18px}
+  .card{background:linear-gradient(145deg,#0f1724, #081220);padding:18px;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.6);max-width:820px;margin:12px auto}
+  h1{margin:0 0 10px;font-size:20px}
+  label{display:block;margin:10px 0 6px;font-size:13px;color:#b8c7df}
+  input[type=text], input[type=number]{width:100%;padding:8px 10px;border-radius:8px;border:1px solid #223044;background:#071326;color:#e6eef8}
+  .row{display:flex;gap:10px}
+  .row > *{flex:1}
+  button{padding:10px 14px;border-radius:8px;border:none;cursor:pointer;background:#0ea5a5;color:#021018;font-weight:600}
+  button.stop{background:#ef4444;color:white}
+  .controls{display:flex;gap:8px;margin-top:12px}
+  .statbox{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .stat{background:rgba(255,255,255,0.03);padding:10px;border-radius:8px;min-width:160px}
+  .history{margin-top:14px;max-height:260px;overflow:auto;border-radius:8px;padding:8px;background:rgba(255,255,255,0.02)}
+  .hist-item{padding:6px;border-bottom:1px dashed rgba(255,255,255,0.03);font-size:13px}
+  .small{font-size:12px;color:#9fb0cf}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Auto Trigger Runner</h1>
+  <label>Trigger URL</label>
+  <input id="url" type="text" value="https://trigger.macrodroid.com/302d6856-cd42-454b-8a85-4a3a46048fe8/rivu?Tempvar=lock" />
+  <div class="row" style="margin-top:8px">
+    <div>
+      <label>Interval (seconds)</label>
+      <input id="intervalSec" type="number" min="0.5" step="0.1" value="3" />
+    </div>
+    <div>
+      <label>Use fetch (try)</label>
+      <select id="tryFetch" style="width:100%;padding:8px;border-radius:8px;background:#071326;color:#e6eef8;border:1px solid #223044">
+        <option value="true" selected>Yes — try fetch (may be blocked by CORS)</option>
+        <option value="false">No — use image ping (less info, bypasses CORS)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="startBtn">Start ▶</button>
+    <button id="stopBtn" class="stop" disabled>Stop ■</button>
+    <button id="clearHist" style="background:#1f2937;color:#e6eef8">Clear History</button>
+  </div>
+
+  <div class="statbox">
+    <div class="stat">
+      <div class="small">Elapsed</div>
+      <div id="elapsed" style="font-size:18px">00:00:00.000</div>
+    </div>
+    <div class="stat">
+      <div class="small">Next trigger in</div>
+      <div id="countdown" style="font-size:18px">--</div>
+    </div>
+    <div class="stat">
+      <div class="small">Total triggers</div>
+      <div id="total" style="font-size:18px">0</div>
+    </div>
+    <div class="stat">
+      <div class="small">Last status</div>
+      <div id="lastStatus" style="font-size:14px">-</div>
+    </div>
+  </div>
+
+  <label style="margin-top:12px">History (latest first)</label>
+  <div id="history" class="history">
+    <!-- history items -->
+  </div>
+
+  <p class="small" style="margin-top:10px;color:#9fb0cf">টিপস: যদি তোমার লক্ষ্য URL CORS কারণে ব্লক হয়, 'Use fetch' সেটিংটি No করে Image-ping ব্যবহার করো। Image-ping করলে সার্ভার রেসপন্স দেখতে পাবে না কিন্তু GET রিকোয়েস্ট যেতে পারে।</p>
+</div>
+
+<script>
+(function(){
+  const startBtn = document.getElementById('startBtn');
+  const stopBtn = document.getElementById('stopBtn');
+  const clearHist = document.getElementById('clearHist');
+  const urlInput = document.getElementById('url');
+  const intervalInput = document.getElementById('intervalSec');
+  const tryFetchSelect = document.getElementById('tryFetch');
+
+  const elapsedEl = document.getElementById('elapsed');
+  const countdownEl = document.getElementById('countdown');
+  const totalEl = document.getElementById('total');
+  const lastStatusEl = document.getElementById('lastStatus');
+  const historyEl = document.getElementById('history');
+
+  let timerInterval = null; // setInterval ref for pings
+  let tickInterval = null;  // setInterval ref for UI clock/countdown
+  let startTime = null;
+  let nextTriggerAt = null;
+  let total = 0;
+  let running = false;
+  let sequence = 0;
+
+  function formatTime(ms){
+    const h = Math.floor(ms/3600000); ms%=3600000;
+    const m = Math.floor(ms/60000); ms%=60000;
+    const s = Math.floor(ms/1000); const rem = ms%1000;
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(rem).padStart(3,'0')}`;
+  }
+
+  function addHistory(statusText, method){
+    const now = new Date();
+    const stamp = now.toLocaleString();
+    const div = document.createElement('div');
+    div.className = 'hist-item';
+    div.innerHTML = `<strong>#${++sequence}</strong> &nbsp; <span class="small">${stamp}</span><br><span style="font-size:13px">${method} — ${statusText}</span>`;
+    // prepend
+    historyEl.insertBefore(div, historyEl.firstChild);
+  }
+
+  async function doPing(theUrl){
+    const useFetch = tryFetchSelect.value === 'true';
+    const cacheBust = `_cb=${Date.now()}`;
+    const sep = theUrl.includes('?') ? '&' : '?';
+    const urlWithCb = theUrl + sep + cacheBust;
+
+    if(useFetch){
+      try{
+        const resp = await fetch(urlWithCb, {method:'GET', mode:'cors', cache:'no-store'});
+        const stat = `HTTP ${resp.status}`;
+        lastStatusEl.textContent = stat;
+        addHistory(stat, 'fetch');
+      }catch(err){
+        // fetch failed (likely CORS), fallback to image ping
+        lastStatusEl.textContent = 'fetch failed → image';
+        addHistory('fetch error: ' + (err && err.message?err.message:'') , 'fetch');
+        // fallback
+        const img = new Image();
+        img.src = urlWithCb;
+        addHistory('image ping (fallback)', 'image');
+      }
+    } else {
+      // image ping
+      const img = new Image();
+      // attach onload/onerror for some feedback (but opaque)
+      img.onload = ()=> {
+        lastStatusEl.textContent = 'image loaded';
+        addHistory('image loaded', 'image');
+      };
+      img.onerror = ()=> {
+        lastStatusEl.textContent = 'image error/opaque';
+        addHistory('image error/opaque', 'image');
+      };
+      img.src = urlWithCb;
+    }
+  }
+
+  function startRunner(){
+    if(running) return;
+    const ivSec = parseFloat(intervalInput.value) || 3;
+    const intervalMs = Math.max(200, Math.round(ivSec*1000)); // min 200ms guard
+    startTime = Date.now();
+    nextTriggerAt = Date.now();
+    total = 0;
+    running = true;
+    sequence = 0;
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+
+    // immediate first trigger
+    triggerNow();
+
+    // schedule repeating triggers
+    timerInterval = setInterval(triggerNow, intervalMs);
+
+    // tick UI (elapsed + countdown)
+    tickInterval = setInterval(()=> {
+      const now = Date.now();
+      const elapsed = now - startTime;
+      elapsedEl.textContent = formatTime(elapsed);
+      const cd = Math.max(0, nextTriggerAt - now);
+      countdownEl.textContent = (cd>0) ? (cd/1000).toFixed(3) + 's' : '0.000s';
+    }, 80);
+  }
+
+  async function triggerNow(){
+    const theUrl = urlInput.value.trim();
+    if(!theUrl) return;
+    const ivSec = parseFloat(intervalInput.value) || 3;
+    const intervalMs = Math.max(200, Math.round(ivSec*1000));
+    nextTriggerAt = Date.now() + intervalMs;
+    total++;
+    totalEl.textContent = total;
+    await doPing(theUrl);
+  }
+
+  function stopRunner(){
+    if(!running) return;
+    running = false;
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    clearInterval(timerInterval); timerInterval = null;
+    clearInterval(tickInterval); tickInterval = null;
+    nextTriggerAt = null;
+  }
+
+  startBtn.addEventListener('click', ()=> {
+    startRunner();
+  });
+  stopBtn.addEventListener('click', ()=> {
+    stopRunner();
+  });
+  clearHist.addEventListener('click', ()=> {
+    historyEl.innerHTML = '';
+    total = 0; totalEl.textContent = total;
+    sequence = 0;
+    lastStatusEl.textContent = '-';
+  });
+
+  // allow pressing Enter in URL to start quickly
+  urlInput.addEventListener('keydown', (e)=> { if(e.key==='Enter'){ startRunner(); } });
+
+  // page unload warning if running
+  window.addEventListener('beforeunload', (e)=>{
+    if(running){
+      e.preventDefault();
+      e.returnValue = 'Runner is active — leave will stop it.';
+    }
+  });
+})();
+</script>
+</body>
+</html>
