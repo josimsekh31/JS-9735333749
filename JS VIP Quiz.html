@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Play & Earn 💸</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <style>
+        :root {
+            --primary-color: #6a11cb;
+            --secondary-color: #2575fc;
+            --background-color: #121212;
+            --surface-color: #1e1e1e;
+            --text-color: #e0e0e0;
+            --text-muted-color: #a0a0a0;
+            --success-color: #4CAF50;
+            --error-color: #F44336;
+            --white-color: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            overscroll-behavior-y: contain;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 1rem;
+            padding-bottom: 80px; /* Space for bottom nav */
+        }
+        
+        .hidden { display: none !important; }
+
+        /* --- Notice Bar --- */
+        .notice-bar {
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            color: var(--white-color);
+            padding: 0.5rem;
+            overflow: hidden;
+            white-space: nowrap;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+        .notice-bar p {
+            display: inline-block;
+            padding-left: 100%;
+            animation: scroll-notice 20s linear infinite;
+        }
+        @keyframes scroll-notice {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
+
+        /* --- Auth Section --- */
+        #auth-section {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .auth-container {
+            width: 100%;
+            max-width: 380px;
+            padding: 2rem;
+            background-color: var(--surface-color);
+            border-radius: 12px;
+        }
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid #333;
+        }
+        .auth-tab {
+            flex: 1;
+            text-align: center;
+            padding: 0.8rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            font-weight: 500;
+        }
+        .auth-tab.active {
+            color: var(--secondary-color);
+            border-bottom-color: var(--secondary-color);
+        }
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-muted-color);
+        }
+        .form-group input {
+            width: 100%;
+            padding: 0.8rem;
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            color: var(--text-color);
+            font-size: 1rem;
+        }
+        .btn {
+            width: 100%;
+            padding: 0.9rem;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            color: var(--white-color);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+        .btn:hover { opacity: 0.9; }
+
+        /* --- App Section --- */
+        #app-section {
+            padding-top: 50px; /* Space for notice bar */
+        }
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .app-header h1 {
+            font-size: 1.5rem;
+        }
+        .balance-chip {
+            background-color: var(--surface-color);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .card {
+            background-color: var(--surface-color);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+        }
+        .card h2 {
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #333;
+            padding-bottom: 0.5rem;
+        }
+
+        /* Home View */
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 1rem;
+        }
+        .category-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 120px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            color: var(--white-color);
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        .category-item:hover {
+            transform: translateY(-5px);
+        }
+
+        /* Wallet View */
+        .wallet-tabs {
+            display: flex;
+            margin-bottom: 1rem;
+        }
+        .wallet-tab {
+            flex: 1;
+            text-align: center;
+            padding: 0.8rem;
+            background-color: #2a2a2a;
+            cursor: pointer;
+        }
+        .wallet-tab:first-child { border-radius: 8px 0 0 8px; }
+        .wallet-tab:last-child { border-radius: 0 8px 8px 0; }
+        .wallet-tab.active {
+             background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+        }
+        .info-box {
+            background-color: #2a2a2a;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        /* History View */
+        .history-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background-color: #2a2a2a;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Profile View */
+        .profile-info {
+            line-height: 1.8;
+        }
+        .profile-info span {
+            font-weight: 600;
+            color: var(--secondary-color);
+        }
+        .btn-logout {
+            margin-top: 1.5rem;
+            background: var(--error-color);
+        }
+
+        /* Quiz View */
+        #quiz-view {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--background-color);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            font-size: 1.2rem;
+        }
+        .timer-circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 3px solid var(--secondary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        .question-text {
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        .option-btn {
+            padding: 1rem;
+            background-color: var(--surface-color);
+            border: 1px solid #444;
+            border-radius: 8px;
+            color: var(--text-color);
+            font-size: 1rem;
+            text-align: left;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .option-btn:hover { background-color: #333; }
+        .option-btn.correct { background-color: var(--success-color); border-color: var(--success-color); }
+        .option-btn.wrong { background-color: var(--error-color); border-color: var(--error-color); }
+
+        /* Bottom Nav */
+        #bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 65px;
+            background-color: var(--surface-color);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid #333;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-muted-color);
+            cursor: pointer;
+            font-size: 0.7rem;
+            transition: color 0.3s;
+        }
+        .nav-item i {
+            font-size: 1.5rem;
+            margin-bottom: 4px;
+        }
+        .nav-item.active {
+            color: var(--secondary-color);
+        }
+
+        /* Alert Toast */
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: var(--white-color);
+            z-index: 3000;
+            opacity: 0;
+            transition: opacity 0.5s, bottom 0.5s;
+        }
+        .toast.show { opacity: 1; bottom: 100px; }
+        .toast.success { background-color: var(--success-color); }
+        .toast.error { background-color: var(--error-color); }
+
+    </style>
+</head>
+<body>
+
+    <!-- NOTICE BAR -->
+    <div class="notice-bar">
+        <p id="notice-text">Welcome to Play & Earn! Loading latest notices...</p>
+    </div>
+
+    <!-- AUTHENTICATION -->
+    <div id="auth-section" class="container">
+        <div class="auth-container">
+            <div class="auth-tabs">
+                <div class="auth-tab active" data-tab="login">Login</div>
+                <div class="auth-tab" data-tab="register">Register</div>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <button type="submit" class="btn">Login</button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" class="hidden">
+                 <div class="form-group">
+                    <label for="register-name">Full Name</label>
+                    <input type="text" id="register-name" required>
+                </div>
+                 <div class="form-group">
+                    <label for="register-phone">Phone Number</label>
+                    <input type="tel" id="register-phone" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-email">Email</label>
+                    <input type="email" id="register-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Password</label>
+                    <input type="password" id="register-password" required>
+                </div>
+                <button type="submit" class="btn">Register</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="app-section" class="container hidden">
+        <!-- APP HEADER -->
+        <header class="app-header">
+            <h1>Dashboard</h1>
+            <div class="balance-chip">Balance: เงณ<span id="user-balance">0</span></div>
+        </header>
+
+        <!-- MAIN CONTENT VIEWS -->
+        <main id="main-content">
+            <!-- Home View -->
+            <div id="home-view" class="view">
+                <div class="card">
+                    <h2>Quiz Categories</h2>
+                    <div id="category-grid" class="category-grid">
+                        <p>Loading categories...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wallet View -->
+            <div id="wallet-view" class="view hidden">
+                <div class="wallet-tabs">
+                    <div class="wallet-tab active" data-tab="deposit-form-container">Deposit</div>
+                    <div class="wallet-tab" data-tab="withdraw-form-container">Withdraw</div>
+                </div>
+
+                <div id="deposit-form-container" class="wallet-form-container">
+                    <div class="card">
+                        <h2>Make a Deposit</h2>
+                        <div class="info-box">
+                            Send money to the number below and submit the form.<br>
+                            <strong>Number: <span id="deposit-number">Loading...</span></strong>
+                        </div>
+                        <form id="deposit-form">
+                             <div class="form-group">
+                                <label for="deposit-amount">Amount</label>
+                                <input type="number" id="deposit-amount" required>
+                            </div>
+                             <div class="form-group">
+                                <label for="user-number">Your Number</label>
+                                <input type="tel" id="user-number" placeholder="Number you sent from" required>
+                            </div>
+                             <div class="form-group">
+                                <label for="transaction-id">Transaction ID</label>
+                                <input type="text" id="transaction-id" required>
+                            </div>
+                            <button type="submit" class="btn">Submit Deposit</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="withdraw-form-container" class="wallet-form-container hidden">
+                     <div class="card">
+                        <h2>Request a Withdrawal</h2>
+                        <div class="info-box">
+                            Minimum withdrawal is เงณ<span id="min-withdrawal">...</span>. Requests are processed within 24 hours.
+                        </div>
+                        <form id="withdraw-form">
+                             <div class="form-group">
+                                <label for="withdraw-amount">Amount</label>
+                                <input type="number" id="withdraw-amount" required>
+                            </div>
+                             <div class="form-group">
+                                <label for="withdraw-user-number">Enter your UPI ID</label>
+                                <input type="tel" id="withdraw-user-number" required>
+                            </div>
+                            <button type="submit" class="btn">Request Withdrawal</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History View -->
+            <div id="history-view" class="view hidden">
+                <div class="card">
+                    <h2>Today's Payments</h2>
+                    <div id="history-list">
+                        <p>No payments today.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile View -->
+            <div id="profile-view" class="view hidden">
+                 <div class="card">
+                    <h2>My Profile</h2>
+                    <div class="profile-info">
+                        <p>Name: <span id="profile-name"></span></p>
+                        <p>Email: <span id="profile-email"></span></p>
+                        <p>Phone: <span id="profile-phone"></span></p>
+                    </div>
+                    <button id="logout-btn" class="btn btn-logout">Logout</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- BOTTOM NAVIGATION -->
+        <nav id="bottom-nav">
+            <div class="nav-item active" data-view="home-view">
+                <i class='bx bxs-home'></i>
+                <span>Home</span>
+            </div>
+            <div class="nav-item" data-view="wallet-view">
+                <i class='bx bxs-wallet'></i>
+                <span>Wallet</span>
+            </div>
+            <div class="nav-item" data-view="history-view">
+                <i class='bx bx-history'></i>
+                <span>History</span>
+            </div>
+            <div class="nav-item" data-view="profile-view">
+                <i class='bx bxs-user'></i>
+                <span>Profile</span>
+            </div>
+        </nav>
+    </div>
+
+    <!-- QUIZ VIEW -->
+    <div id="quiz-view" class="hidden">
+        <div class="quiz-container">
+            <div class="quiz-header">
+                <span id="question-counter">Question 1/10</span>
+                <div class="timer-circle" id="timer">20</div>
+            </div>
+            <p class="question-text" id="question-text">What is the capital of France?</p>
+            <div class="options-grid" id="options-grid">
+                <!-- Options will be injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Toast -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        // --- PASTE YOUR FIREBASE CONFIGURATION HERE ---
+        const firebaseConfig = {
+  apiKey: "AIzaSyCkndE5h7HOLTg2xEs7mgKimJIwodApFJs",
+  authDomain: "andronix-bcdf7.firebaseapp.com",
+  projectId: "andronix-bcdf7",
+  storageBucket: "andronix-bcdf7.appspot.com",
+  messagingSenderId: "982083836381",
+  appId: "1:982083836381:web:88a162ce883e69d2e73e34"
+};
+        // --- END OF FIREBASE CONFIGURATION ---
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Global State
+        let currentUser = null;
+        let appSettings = {};
+        let currentQuizQuestions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let timerInterval;
+
+        // DOM Elements
+        const authSection = document.getElementById('auth-section');
+        const appSection = document.getElementById('app-section');
+        const mainContent = document.getElementById('main-content');
+        const views = document.querySelectorAll('.view');
+        const bottomNav = document.getElementById('bottom-nav');
+
+        // --- UTILITY FUNCTIONS ---
+        const showToast = (message, type = 'success') => {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast show ${type}`;
+            setTimeout(() => {
+                toast.className = 'toast';
+            }, 3000);
+        };
+
+        const showView = (viewId) => {
+            views.forEach(view => view.classList.add('hidden'));
+            document.getElementById(viewId)?.classList.remove('hidden');
+
+            const activeNavItem = document.querySelector('.nav-item.active');
+            if (activeNavItem) activeNavItem.classList.remove('active');
+            document.querySelector(`.nav-item[data-view="${viewId}"]`)?.classList.add('active');
+            
+            // Update header title based on view
+            const headerTitle = document.querySelector('#app-section h1');
+            if (headerTitle) {
+                const titleMap = {
+                    'home-view': 'Dashboard',
+                    'wallet-view': 'My Wallet',
+                    'history-view': 'History',
+                    'profile-view': 'My Profile'
+                };
+                headerTitle.textContent = titleMap[viewId] || 'Quiz App';
+            }
+        };
+
+        // --- AUTHENTICATION ---
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                authSection.classList.add('hidden');
+                appSection.classList.remove('hidden');
+                fetchUserData(user.uid);
+                fetchAppSettings();
+                loadQuizCategories();
+                loadHistory();
+            } else {
+                authSection.classList.remove('hidden');
+                appSection.classList.add('hidden');
+                currentUser = null;
+            }
+        });
+
+        // Auth Tabs
+        document.querySelectorAll('.auth-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                document.querySelector('.auth-tab.active').classList.remove('active');
+                e.target.classList.add('active');
+                const targetForm = e.target.dataset.tab;
+                document.getElementById('login-form').classList.toggle('hidden', targetForm !== 'login');
+                document.getElementById('register-form').classList.toggle('hidden', targetForm !== 'register');
+            });
+        });
+
+        // Register
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('register-name').value;
+            const phone = document.getElementById('register-phone').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            
+            try {
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                // Create user profile in Firestore
+                await db.collection('users').doc(user.uid).set({
+                    uid: user.uid,
+                    name: name,
+                    email: email,
+                    phoneNumber: phone,
+                    balance: 0
+                });
+                showToast('Registration successful!', 'success');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        });
+
+        // Login
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+                showToast('Login successful!', 'success');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        });
+
+        // Logout
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            auth.signOut();
+        });
+
+        // --- DATA FETCHING ---
+        const fetchUserData = (uid) => {
+            db.collection('users').doc(uid).onSnapshot(doc => {
+                if (doc.exists) {
+                    currentUser = { uid, ...doc.data() };
+                    updateUIWithUserData();
+                }
+            }, err => {
+                console.error("Error fetching user data:", err);
+                showToast('Could not load user data.', 'error');
+            });
+        };
+
+        const fetchAppSettings = () => {
+            db.collection('settings').doc('appConfig').onSnapshot(doc => {
+                if (doc.exists) {
+                    appSettings = doc.data();
+                    updateUIWithAppSettings();
+                } else {
+                    console.log("No app settings found!");
+                }
+            }, err => {
+                console.error("Error fetching app settings:", err);
+            });
+        };
+
+        const loadQuizCategories = async () => {
+            const grid = document.getElementById('category-grid');
+            try {
+                const snapshot = await db.collection('questions').get();
+                const categories = new Set();
+                snapshot.forEach(doc => categories.add(doc.data().categoryId));
+                
+                grid.innerHTML = '';
+                if(categories.size === 0) {
+                    grid.innerHTML = '<p>No quiz categories available right now.</p>';
+                    return;
+                }
+                
+                categories.forEach(cat => {
+                    const item = document.createElement('div');
+                    item.className = 'category-item';
+                    item.textContent = cat;
+                    item.onclick = () => startQuiz(cat);
+                    grid.appendChild(item);
+                });
+            } catch (error) {
+                console.error("Error loading categories: ", error);
+                grid.innerHTML = '<p>Could not load categories.</p>';
+            }
+        };
+        
+        const loadHistory = async () => {
+            const historyList = document.getElementById('history-list');
+            
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const startOfToday = firebase.firestore.Timestamp.fromDate(today);
+
+            db.collection('withdrawals')
+                .where('status', '==', 'paid')
+                .where('timestamp', '>=', startOfToday)
+                .orderBy('timestamp', 'desc')
+                .onSnapshot(snapshot => {
+                    if (snapshot.empty) {
+                        historyList.innerHTML = '<p>No payments today.</p>';
+                        return;
+                    }
+                    let html = '';
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const time = data.timestamp.toDate().toLocaleTimeString();
+                        html += `
+                            <div class="history-list-item">
+                                <span>${data.userNumber.slice(0, 3)}****${data.userNumber.slice(-4)}</span>
+                                <strong>เงณ${data.amount}</strong>
+                            </div>
+                        `;
+                    });
+                    historyList.innerHTML = html;
+                });
+        };
+
+        // --- UI UPDATES ---
+        const updateUIWithUserData = () => {
+            if (!currentUser) return;
+            document.getElementById('user-balance').textContent = currentUser.balance.toFixed(2);
+            document.getElementById('profile-name').textContent = currentUser.name;
+            document.getElementById('profile-email').textContent = currentUser.email;
+            document.getElementById('profile-phone').textContent = currentUser.phoneNumber;
+        };
+        
+        const updateUIWithAppSettings = () => {
+            if (!appSettings) return;
+            document.getElementById('notice-text').textContent = appSettings.noticeText || 'Welcome!';
+            document.getElementById('deposit-number').textContent = appSettings.depositNumber || 'Not set';
+            document.getElementById('min-withdrawal').textContent = appSettings.minWithdrawal || 'N/A';
+        };
+
+        // --- APP NAVIGATION ---
+        bottomNav.addEventListener('click', (e) => {
+            const navItem = e.target.closest('.nav-item');
+            if (navItem) {
+                showView(navItem.dataset.view);
+            }
+        });
+
+        // --- WALLET LOGIC ---
+        // Wallet tabs
+        document.querySelectorAll('.wallet-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                document.querySelector('.wallet-tab.active').classList.remove('active');
+                e.target.classList.add('active');
+                const targetContainer = e.target.dataset.tab;
+                document.querySelectorAll('.wallet-form-container').forEach(c => c.classList.add('hidden'));
+                document.getElementById(targetContainer).classList.remove('hidden');
+            });
+        });
+
+        // Deposit form
+        document.getElementById('deposit-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const amount = parseFloat(document.getElementById('deposit-amount').value);
+            const userNumber = document.getElementById('user-number').value;
+            const transactionId = document.getElementById('transaction-id').value;
+            
+            if (isNaN(amount) || amount <= 0) {
+                return showToast('Please enter a valid amount.', 'error');
+            }
+
+            try {
+                await db.collection('deposits').add({
+                    userId: currentUser.uid,
+                    amount: amount,
+                    userNumber: userNumber,
+                    transactionId: transactionId,
+                    status: 'pending',
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                showToast('Deposit request submitted!', 'success');
+                e.target.reset();
+            } catch (error) {
+                showToast('Could not submit request. Try again.', 'error');
+            }
+        });
+
+        // Withdraw form
+        document.getElementById('withdraw-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const amount = parseFloat(document.getElementById('withdraw-amount').value);
+            const userNumber = document.getElementById('withdraw-user-number').value;
+
+            if (isNaN(amount) || amount < appSettings.minWithdrawal) {
+                return showToast(`Minimum withdrawal is เงณ${appSettings.minWithdrawal}.`, 'error');
+            }
+            if (amount > currentUser.balance) {
+                return showToast('Insufficient balance.', 'error');
+            }
+
+            try {
+                // Deduct balance first, then create request
+                const userRef = db.collection('users').doc(currentUser.uid);
+                await db.runTransaction(async (transaction) => {
+                    const userDoc = await transaction.get(userRef);
+                    if (!userDoc.exists) throw "User does not exist!";
+                    
+                    const newBalance = userDoc.data().balance - amount;
+                    if (newBalance < 0) throw "Insufficient balance!";
+                    
+                    transaction.update(userRef, { balance: newBalance });
+
+                    const withdrawalRef = db.collection('withdrawals').doc();
+                    transaction.set(withdrawalRef, {
+                        userId: currentUser.uid,
+                        amount: amount,
+                        userNumber: userNumber,
+                        status: 'pending',
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                });
+
+                showToast('Withdrawal request submitted!', 'success');
+                e.target.reset();
+            } catch (error) {
+                showToast(error.message || 'Could not submit request.', 'error');
+            }
+        });
+        
+        // --- QUIZ LOGIC ---
+        const startQuiz = async (category) => {
+            try {
+                const snapshot = await db.collection('questions').where('categoryId', '==', category).get();
+                if (snapshot.empty) {
+                    showToast('No questions available in this category.', 'error');
+                    return;
+                }
+                currentQuizQuestions = snapshot.docs.map(doc => doc.data());
+                currentQuestionIndex = 0;
+                score = 0;
+                document.getElementById('quiz-view').classList.remove('hidden');
+                displayQuestion();
+            } catch (error) {
+                showToast('Failed to load quiz.', 'error');
+                console.error(error);
+            }
+        };
+
+        const displayQuestion = () => {
+            if (currentQuestionIndex >= currentQuizQuestions.length) {
+                endQuiz();
+                return;
+            }
+
+            const question = currentQuizQuestions[currentQuestionIndex];
+            document.getElementById('question-counter').textContent = `Question ${currentQuestionIndex + 1}/${currentQuizQuestions.length}`;
+            document.getElementById('question-text').textContent = question.questionText;
+            
+            const optionsGrid = document.getElementById('options-grid');
+            optionsGrid.innerHTML = '';
+            question.options.forEach(option => {
+                const button = document.createElement('button');
+                button.className = 'option-btn';
+                button.textContent = option;
+                button.onclick = () => selectAnswer(button, option, question.correctAnswer);
+                optionsGrid.appendChild(button);
+            });
+
+            startTimer();
+        };
+
+        const startTimer = () => {
+            clearInterval(timerInterval);
+            let timeLeft = appSettings.quizTimer || 20;
+            const timerEl = document.getElementById('timer');
+            timerEl.textContent = timeLeft;
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerEl.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    handleAnswer(false); // Timer out = wrong answer
+                }
+            }, 1000);
+        };
+        
+        const selectAnswer = (buttonEl, selectedAnswer, correctAnswer) => {
+            clearInterval(timerInterval);
+            const isCorrect = selectedAnswer === correctAnswer;
+            
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.disabled = true;
+                if (btn.textContent === correctAnswer) {
+                    btn.classList.add('correct');
+                }
+            });
+
+            if (!isCorrect) {
+                buttonEl.classList.add('wrong');
+            }
+
+            handleAnswer(isCorrect);
+        };
+
+        const handleAnswer = async (isCorrect) => {
+            const winAmount = appSettings.quizWinAmount || 5;
+            const losePenalty = appSettings.quizLosePenalty || 2;
+            const amountChange = isCorrect ? winAmount : -losePenalty;
+            
+            try {
+                const userRef = db.collection('users').doc(currentUser.uid);
+                await userRef.update({
+                    balance: firebase.firestore.FieldValue.increment(amountChange)
+                });
+                showToast(isCorrect ? `+เงณ${winAmount} Correct!` : `-เงณ${losePenalty} Wrong!`, isCorrect ? 'success' : 'error');
+            } catch (error) {
+                console.error("Error updating balance:", error);
+                showToast('Error updating balance.', 'error');
+            }
+
+            currentQuestionIndex++;
+            setTimeout(displayQuestion, 1500); // Wait before showing next question
+        };
+
+        const endQuiz = () => {
+            showToast('Quiz finished!', 'success');
+            document.getElementById('quiz-view').classList.add('hidden');
+        };
+
+        // Initialize on load
+        showView('home-view');
+    </script>
+</body>
+</html>

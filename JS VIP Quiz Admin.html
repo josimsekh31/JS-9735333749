@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --background-color: #f4f7f9;
+            --surface-color: #ffffff;
+            --text-color: #333;
+            --text-muted-color: #777;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --pending-color: #ffc107;
+            --border-color: #e0e0e0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        
+        .hidden { display: none !important; }
+
+        /* --- Login Section --- */
+        #admin-login-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .login-box {
+            width: 100%;
+            max-width: 380px;
+            padding: 2.5rem;
+            background-color: var(--surface-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+        .login-box h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: var(--primary-color);
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        .btn {
+            display: inline-block;
+            width: 100%;
+            padding: 0.9rem;
+            border: none;
+            border-radius: 6px;
+            background-color: var(--primary-color);
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+        }
+        .btn:hover { opacity: 0.9; }
+        .btn-success { background-color: var(--success-color); }
+        .btn-danger { background-color: var(--error-color); }
+        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.8rem; width: auto; }
+        
+        /* --- Admin Panel --- */
+        #admin-panel-section header {
+            background-color: var(--surface-color);
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        #admin-panel-section header h1 { font-size: 1.2rem; }
+        #logout-btn { background: none; border: none; color: var(--error-color); font-size: 1.5rem; cursor: pointer; }
+        
+        nav.admin-nav {
+            display: flex;
+            overflow-x: auto;
+            background-color: var(--surface-color);
+            border-bottom: 1px solid var(--border-color);
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
+        }
+        nav.admin-nav::-webkit-scrollbar { display: none; } /* Chrome, Safari */
+        
+        .nav-link {
+            padding: 1rem;
+            text-align: center;
+            white-space: nowrap;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            color: var(--text-muted-color);
+            font-weight: 500;
+        }
+        .nav-link.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+        
+        .card {
+            background-color: var(--surface-color);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .card h2 {
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.8rem;
+        }
+        
+        /* Dashboard */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+        .stat-card {
+            background-color: var(--primary-color);
+            color: #fff;
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-card.pending { background-color: var(--pending-color); color: #333; }
+        .stat-card h3 { font-size: 2rem; margin-bottom: 0.5rem; }
+        .stat-card p { font-size: 0.9rem; }
+        
+        /* Tables */
+        .table-responsive {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        th, td {
+            padding: 0.8rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+        th { font-weight: 600; }
+        td .actions { display: flex; gap: 0.5rem; }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: var(--surface-color);
+            padding: 2rem;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .modal-header h2 { margin: 0; }
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        /* Transaction Tabs */
+        .sub-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 1rem;
+        }
+        .sub-tab {
+            padding: 0.8rem 1rem;
+            cursor: pointer;
+        }
+        .sub-tab.active {
+            border-bottom: 2px solid var(--primary-color);
+            font-weight: 600;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN -->
+    <div id="admin-login-section" class="container">
+        <div class="login-box">
+            <h1>Admin Login</h1>
+            <form id="admin-login-form">
+                <div class="form-group">
+                    <label for="admin-email">Email</label>
+                    <input type="email" id="admin-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="admin-password">Password</label>
+                    <input type="password" id="admin-password" required>
+                </div>
+                <button type="submit" class="btn">Login</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- ADMIN PANEL -->
+    <div id="admin-panel-section" class="hidden">
+        <header>
+            <h1>Admin Panel</h1>
+            <button id="logout-btn"><i class='bx bx-log-out-circle'></i></button>
+        </header>
+        <nav class="admin-nav">
+            <a class="nav-link active" data-view="dashboard-view">Dashboard</a>
+            <a class="nav-link" data-view="settings-view">Settings</a>
+            <a class="nav-link" data-view="quizzes-view">Quizzes</a>
+            <a class="nav-link" data-view="users-view">Users</a>
+            <a class="nav-link" data-view="transactions-view">Transactions</a>
+        </nav>
+        
+        <main class="container">
+            <!-- Dashboard View -->
+            <div id="dashboard-view" class="view">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3 id="total-users">0</h3>
+                        <p>Total Users</p>
+                    </div>
+                    <div class="stat-card pending">
+                        <h3 id="pending-deposits">0</h3>
+                        <p>Pending Deposits</p>
+                    </div>
+                    <div class="stat-card pending">
+                        <h3 id="pending-withdrawals">0</h3>
+                        <p>Pending Withdrawals</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings View -->
+            <div id="settings-view" class="view hidden">
+                <div class="card">
+                    <h2>App Settings</h2>
+                    <form id="settings-form">
+                        <div class="form-group">
+                            <label for="notice-text">Scrolling Notice</label>
+                            <input type="text" id="notice-text" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="deposit-number">Deposit Number (Bkash/Nagad)</label>
+                            <input type="text" id="deposit-number" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="min-withdrawal">Minimum Withdrawal</label>
+                            <input type="number" id="min-withdrawal" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="quiz-timer">Quiz Timer (seconds)</label>
+                            <input type="number" id="quiz-timer" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="quiz-win-amount">Quiz Win Reward (เงณ)</label>
+                            <input type="number" id="quiz-win-amount" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="quiz-lose-penalty">Quiz Lose Penalty (เงณ)</label>
+                            <input type="number" id="quiz-lose-penalty" required>
+                        </div>
+                        <button type="submit" class="btn">Save Settings</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Quizzes View -->
+            <div id="quizzes-view" class="view hidden">
+                <div class="card">
+                    <h2>Manage Quizzes</h2>
+                    <button class="btn" id="add-question-btn">Add New Question</button>
+                    <div class="table-responsive">
+                        <table id="questions-table">
+                            <thead><tr><th>Question</th><th>Category</th><th>Actions</th></tr></thead>
+                            <tbody><!-- Data will be loaded here --></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users View -->
+            <div id="users-view" class="view hidden">
+                <div class="card">
+                    <h2>Manage Users</h2>
+                    <div class="table-responsive">
+                        <table id="users-table">
+                            <thead><tr><th>Name</th><th>Email</th><th>Balance</th><th>Actions</th></tr></thead>
+                            <tbody><!-- Data will be loaded here --></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transactions View -->
+            <div id="transactions-view" class="view hidden">
+                <div class="card">
+                    <div class="sub-tabs">
+                        <span class="sub-tab active" data-tab="deposits">Deposits</span>
+                        <span class="sub-tab" data-tab="withdrawals">Withdrawals</span>
+                    </div>
+
+                    <div id="deposits-content">
+                        <div class="table-responsive">
+                            <table id="deposits-table">
+                                <thead><tr><th>User #</th><th>Amount</th><th>TxID</th><th>Actions</th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="withdrawals-content" class="hidden">
+                        <div class="table-responsive">
+                            <table id="withdrawals-table">
+                                <thead><tr><th>User #</th><th>Amount</th><th>Actions</th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Question Modal -->
+    <div id="question-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Add Question</h2>
+                <button class="close-modal" data-modal="question-modal">&times;</button>
+            </div>
+            <form id="question-form">
+                <input type="hidden" id="question-id">
+                <div class="form-group">
+                    <label for="question-text">Question Text</label>
+                    <textarea id="question-text" rows="3" required style="width: 100%; padding: 0.5rem; font-family: 'Poppins'; border: 1px solid var(--border-color); border-radius: 6px;"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="question-category">Category</label>
+                    <input type="text" id="question-category" required placeholder="e.g., General Knowledge">
+                </div>
+                <div class="form-group">
+                    <label>Options</label>
+                    <input type="text" class="question-option" placeholder="Option A" required>
+                    <input type="text" class="question-option" placeholder="Option B" required>
+                    <input type="text" class="question-option" placeholder="Option C" required>
+                    <input type="text" class="question-option" placeholder="Option D" required>
+                </div>
+                <div class="form-group">
+                    <label for="correct-answer">Correct Answer</label>
+                    <input type="text" id="correct-answer" required placeholder="Exactly match one of the options">
+                </div>
+                <button type="submit" class="btn">Save Question</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+    
+    <script>
+        // --- PASTE YOUR FIREBASE CONFIGURATION HERE ---
+        const firebaseConfig = {
+  apiKey: "AIzaSyCkndE5h7HOLTg2xEs7mgKimJIwodApFJs",
+  authDomain: "andronix-bcdf7.firebaseapp.com",
+  projectId: "andronix-bcdf7",
+  storageBucket: "andronix-bcdf7.appspot.com",
+  messagingSenderId: "982083836381",
+  appId: "1:982083836381:web:88a162ce883e69d2e73e34"
+};
+        // --- END OF FIREBASE CONFIGURATION ---
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // DOM Elements
+        const loginSection = document.getElementById('admin-login-section');
+        const panelSection = document.getElementById('admin-panel-section');
+
+        // --- AUTH ---
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                loginSection.classList.add('hidden');
+                panelSection.classList.remove('hidden');
+                initializeApp();
+            } else {
+                loginSection.classList.remove('hidden');
+                panelSection.classList.add('hidden');
+            }
+        });
+
+        document.getElementById('admin-login-form').addEventListener('submit', e => {
+            e.preventDefault();
+            const email = document.getElementById('admin-email').value;
+            const password = document.getElementById('admin-password').value;
+            auth.signInWithEmailAndPassword(email, password).catch(err => alert(err.message));
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => auth.signOut());
+
+        // --- VIEW NAVIGATION ---
+        const navLinks = document.querySelectorAll('.nav-link');
+        const views = document.querySelectorAll('.view');
+        
+        const showView = (viewId) => {
+            views.forEach(v => v.classList.add('hidden'));
+            document.getElementById(viewId).classList.remove('hidden');
+            navLinks.forEach(l => l.classList.remove('active'));
+            document.querySelector(`.nav-link[data-view="${viewId}"]`).classList.add('active');
+        };
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                const viewId = link.dataset.view;
+                showView(viewId);
+                // Load data for the shown view
+                switch (viewId) {
+                    case 'dashboard-view': loadDashboardStats(); break;
+                    case 'settings-view': loadSettings(); break;
+                    case 'quizzes-view': loadQuestions(); break;
+                    case 'users-view': loadUsers(); break;
+                    case 'transactions-view': loadDeposits(); loadWithdrawals(); break;
+                }
+            });
+        });
+        
+        // --- INITIALIZE APP DATA ---
+        function initializeApp() {
+            showView('dashboard-view');
+            loadDashboardStats();
+        }
+
+        // --- DASHBOARD ---
+        function loadDashboardStats() {
+            db.collection('users').onSnapshot(snap => {
+                document.getElementById('total-users').textContent = snap.size;
+            });
+            db.collection('deposits').where('status', '==', 'pending').onSnapshot(snap => {
+                document.getElementById('pending-deposits').textContent = snap.size;
+            });
+            db.collection('withdrawals').where('status', '==', 'pending').onSnapshot(snap => {
+                document.getElementById('pending-withdrawals').textContent = snap.size;
+            });
+        }
+        
+        // --- SETTINGS ---
+        const settingsForm = document.getElementById('settings-form');
+        async function loadSettings() {
+            const doc = await db.collection('settings').doc('appConfig').get();
+            if (doc.exists) {
+                const data = doc.data();
+                settingsForm.elements['notice-text'].value = data.noticeText || '';
+                settingsForm.elements['deposit-number'].value = data.depositNumber || '';
+                settingsForm.elements['min-withdrawal'].value = data.minWithdrawal || 0;
+                settingsForm.elements['quiz-timer'].value = data.quizTimer || 20;
+                settingsForm.elements['quiz-win-amount'].value = data.quizWinAmount || 5;
+                settingsForm.elements['quiz-lose-penalty'].value = data.quizLosePenalty || 2;
+            }
+        }
+        settingsForm.addEventListener('submit', async e => {
+            e.preventDefault();
+            const settingsData = {
+                noticeText: settingsForm.elements['notice-text'].value,
+                depositNumber: settingsForm.elements['deposit-number'].value,
+                minWithdrawal: Number(settingsForm.elements['min-withdrawal'].value),
+                quizTimer: Number(settingsForm.elements['quiz-timer'].value),
+                quizWinAmount: Number(settingsForm.elements['quiz-win-amount'].value),
+                quizLosePenalty: Number(settingsForm.elements['quiz-lose-penalty'].value)
+            };
+            await db.collection('settings').doc('appConfig').set(settingsData);
+            alert('Settings saved!');
+        });
+
+        // --- QUIZZES ---
+        const questionModal = document.getElementById('question-modal');
+        document.getElementById('add-question-btn').addEventListener('click', () => openQuestionModal());
+        
+        function openQuestionModal(questionData = null) {
+            const form = document.getElementById('question-form');
+            form.reset();
+            document.getElementById('modal-title').textContent = questionData ? 'Edit Question' : 'Add Question';
+            document.getElementById('question-id').value = questionData ? questionData.id : '';
+            if (questionData) {
+                document.getElementById('question-text').value = questionData.questionText;
+                document.getElementById('question-category').value = questionData.categoryId;
+                const optionInputs = document.querySelectorAll('.question-option');
+                questionData.options.forEach((opt, i) => optionInputs[i].value = opt);
+                document.getElementById('correct-answer').value = questionData.correctAnswer;
+            }
+            questionModal.classList.remove('hidden');
+        }
+
+        document.querySelectorAll('.close-modal').forEach(btn => 
+            btn.addEventListener('click', () => document.getElementById(btn.dataset.modal).classList.add('hidden'))
+        );
+
+        document.getElementById('question-form').addEventListener('submit', async e => {
+            e.preventDefault();
+            const id = document.getElementById('question-id').value;
+            const options = Array.from(document.querySelectorAll('.question-option')).map(input => input.value);
+            const questionData = {
+                questionText: document.getElementById('question-text').value,
+                categoryId: document.getElementById('question-category').value,
+                options: options,
+                correctAnswer: document.getElementById('correct-answer').value
+            };
+            
+            if (id) {
+                await db.collection('questions').doc(id).update(questionData);
+            } else {
+                await db.collection('questions').add(questionData);
+            }
+            questionModal.classList.add('hidden');
+            loadQuestions();
+        });
+        
+        function loadQuestions() {
+            db.collection('questions').onSnapshot(snap => {
+                const tbody = document.querySelector('#questions-table tbody');
+                tbody.innerHTML = '';
+                snap.forEach(doc => {
+                    const q = { id: doc.id, ...doc.data() };
+                    const tr = `
+                        <tr>
+                            <td>${q.questionText.substring(0, 30)}...</td>
+                            <td>${q.categoryId}</td>
+                            <td class="actions">
+                                <button class="btn btn-sm" onclick="editQuestion('${q.id}')">Edit</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteQuestion('${q.id}')">Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += tr;
+                    window.editQuestion = async (id) => {
+                        const doc = await db.collection('questions').doc(id).get();
+                        openQuestionModal({ id: doc.id, ...doc.data() });
+                    };
+                    window.deleteQuestion = async (id) => {
+                        if (confirm('Are you sure?')) {
+                            await db.collection('questions').doc(id).delete();
+                        }
+                    };
+                });
+            });
+        }
+        
+        // --- USERS ---
+        function loadUsers() {
+            db.collection('users').onSnapshot(snap => {
+                const tbody = document.querySelector('#users-table tbody');
+                tbody.innerHTML = '';
+                snap.forEach(doc => {
+                    const user = doc.data();
+                    const tr = `
+                        <tr>
+                            <td>${user.name}</td>
+                            <td>${user.email}</td>
+                            <td>เงณ${user.balance.toFixed(2)}</td>
+                            <td class="actions">
+                                <button class="btn btn-sm" onclick="adjustBalance('${doc.id}')">Adjust Balance</button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += tr;
+                    window.adjustBalance = async (uid) => {
+                        const amount = prompt('Enter amount to add (use - for subtraction):');
+                        if (amount && !isNaN(amount)) {
+                            await db.collection('users').doc(uid).update({
+                                balance: firebase.firestore.FieldValue.increment(Number(amount))
+                            });
+                            alert('Balance updated!');
+                        }
+                    };
+                });
+            });
+        }
+        
+        // --- TRANSACTIONS ---
+        document.querySelectorAll('.sub-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelector('.sub-tab.active').classList.remove('active');
+                tab.classList.add('active');
+                if (tab.dataset.tab === 'deposits') {
+                    document.getElementById('deposits-content').classList.remove('hidden');
+                    document.getElementById('withdrawals-content').classList.add('hidden');
+                } else {
+                    document.getElementById('deposits-content').classList.add('hidden');
+                    document.getElementById('withdrawals-content').classList.remove('hidden');
+                }
+            });
+        });
+
+        function loadDeposits() {
+            db.collection('deposits').where('status', '==', 'pending').onSnapshot(snap => {
+                const tbody = document.querySelector('#deposits-table tbody');
+                tbody.innerHTML = '';
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    const tr = `
+                        <tr>
+                            <td>${d.userNumber}</td>
+                            <td>เงณ${d.amount}</td>
+                            <td>${d.transactionId}</td>
+                            <td class="actions">
+                                <button class="btn btn-success btn-sm" onclick="handleDeposit('${doc.id}', 'approved')">Approve</button>
+                                <button class="btn btn-danger btn-sm" onclick="handleDeposit('${doc.id}', 'rejected')">Reject</button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += tr;
+                });
+            });
+            window.handleDeposit = async (id, status) => {
+                const depositRef = db.collection('deposits').doc(id);
+                if (status === 'approved') {
+                    await db.runTransaction(async (t) => {
+                        const depositDoc = await t.get(depositRef);
+                        const depositData = depositDoc.data();
+                        const userRef = db.collection('users').doc(depositData.userId);
+                        
+                        t.update(userRef, { balance: firebase.firestore.FieldValue.increment(depositData.amount) });
+                        t.update(depositRef, { status: 'approved' });
+                    });
+                } else {
+                    await depositRef.update({ status: 'rejected' });
+                }
+                alert(`Deposit ${status}`);
+            };
+        }
+        
+        function loadWithdrawals() {
+            db.collection('withdrawals').where('status', '==', 'pending').onSnapshot(snap => {
+                const tbody = document.querySelector('#withdrawals-table tbody');
+                tbody.innerHTML = '';
+                snap.forEach(doc => {
+                    const w = doc.data();
+                    const tr = `
+                        <tr>
+                            <td>${w.userNumber}</td>
+                            <td>เงณ${w.amount}</td>
+                            <td class="actions">
+                                <button class="btn btn-success btn-sm" onclick="handleWithdrawal('${doc.id}', 'paid')">Mark Paid</button>
+                                <button class="btn btn-danger btn-sm" onclick="handleWithdrawal('${doc.id}', 'rejected')">Reject</button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += tr;
+                });
+            });
+            window.handleWithdrawal = async (id, status) => {
+                const withdrawalRef = db.collection('withdrawals').doc(id);
+                if (status === 'rejected') {
+                     await db.runTransaction(async (t) => {
+                        const wDoc = await t.get(withdrawalRef);
+                        const wData = wDoc.data();
+                        const userRef = db.collection('users').doc(wData.userId);
+                        // Refund the user's balance
+                        t.update(userRef, { balance: firebase.firestore.FieldValue.increment(wData.amount) });
+                        t.update(withdrawalRef, { status: 'rejected' });
+                    });
+                } else {
+                    await withdrawalRef.update({ status: 'paid' });
+                }
+                alert(`Withdrawal marked as ${status}`);
+            };
+        }
+
+    </script>
+</body>
+</html>
