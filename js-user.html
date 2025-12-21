@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Aristo Store | Digital Marketplace</title>
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Razorpay SDK -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #050505;
+            --bg-card: #121212;
+            --bg-panel: #1a1a1a;
+            --primary: #00f3ff; /* Neon Cyan */
+            --secondary: #bc13fe; /* Neon Purple */
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --danger: #ff2a2a;
+            --success: #00ff88;
+            --glass: rgba(18, 18, 18, 0.85);
+            --border: 1px solid rgba(255, 255, 255, 0.08);
+            --nav-height: 60px;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            overflow-x: hidden;
+            padding-bottom: var(--nav-height);
+        }
+
+        /* --- Utilities & Animations --- */
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-4 { gap: 1rem; }
+        .text-center { text-align: center; }
+        .text-primary { color: var(--primary); }
+        .text-sm { font-size: 0.875rem; }
+        .font-bold { font-weight: 700; }
+        
+        .btn {
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn:active { transform: scale(0.96); }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+        .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+        
+        .skeleton {
+            background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 4px;
+        }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Layout --- */
+        header {
+            position: sticky; top: 0; z-index: 50;
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            padding: 10px 15px;
+            border-bottom: var(--border);
+            display: flex; align-items: center; gap: 15px;
+        }
+        .logo { font-size: 1.2rem; font-weight: 700; background: -webkit-linear-gradient(0deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .search-bar {
+            flex: 1; position: relative;
+        }
+        .search-input {
+            width: 100%; background: #000; border: var(--border);
+            padding: 8px 12px 8px 35px; border-radius: 20px;
+            color: white; outline: none; transition: border-color 0.3s;
+        }
+        .search-input:focus { border-color: var(--primary); }
+        .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.8rem; }
+
+        .container { padding: 15px; max-width: 1200px; margin: 0 auto; }
+
+        /* --- Components --- */
+        .category-scroll {
+            display: flex; gap: 10px; overflow-x: auto; padding: 10px 15px;
+            scrollbar-width: none; 
+        }
+        .chip {
+            background: var(--bg-card); border: var(--border);
+            padding: 6px 16px; border-radius: 20px; white-space: nowrap;
+            font-size: 0.85rem; cursor: pointer; transition: 0.2s;
+        }
+        .chip.active { background: var(--primary); color: #000; border-color: var(--primary); }
+
+        .product-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 15px; padding: 15px;
+        }
+        .product-card {
+            background: var(--bg-card); border: var(--border);
+            border-radius: 12px; overflow: hidden;
+            display: flex; flex-direction: column;
+            animation: fadeIn 0.4s ease-out;
+            position: relative;
+        }
+        .card-img {
+            width: 100%; aspect-ratio: 1/1; object-fit: cover;
+            background: #222;
+        }
+        .card-body { padding: 10px; display: flex; flex-direction: column; flex: 1; }
+        .card-title { font-size: 0.95rem; margin: 0 0 5px 0; font-weight: 600; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .card-price { font-size: 1rem; color: var(--primary); font-weight: bold; margin-bottom: 5px; }
+        .card-badge { position: absolute; top: 8px; left: 8px; background: var(--secondary); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
+        .btn-fav { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; }
+        .btn-fav.active { color: var(--danger); }
+
+        /* --- Modals --- */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100;
+            display: flex; align-items: end; justify-content: center;
+            opacity: 0; pointer-events: none; transition: 0.3s;
+        }
+        .modal-overlay.open { opacity: 1; pointer-events: auto; }
+        .modal-content {
+            background: var(--bg-panel); width: 100%; max-width: 600px;
+            max-height: 90vh; overflow-y: auto;
+            border-top-left-radius: 20px; border-top-right-radius: 20px;
+            padding: 20px; transform: translateY(100%); transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative; border-top: 1px solid var(--secondary);
+        }
+        .modal-overlay.open .modal-content { transform: translateY(0); }
+        .modal-close { position: absolute; top: 15px; right: 15px; background: #333; color: white; border: none; width: 30px; height: 30px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; }
+
+        @media (min-width: 768px) {
+            .modal-overlay { align-items: center; }
+            .modal-content { border-radius: 20px; transform: scale(0.9); border: 1px solid var(--secondary); }
+            .modal-overlay.open .modal-content { transform: scale(1); }
+        }
+
+        /* --- Bottom Nav --- */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: var(--glass); backdrop-filter: blur(10px);
+            border-top: var(--border); height: var(--nav-height);
+            display: flex; justify-content: space-around; align-items: center;
+            z-index: 90;
+        }
+        .nav-item { color: var(--text-muted); text-align: center; font-size: 0.7rem; cursor: pointer; flex: 1; }
+        .nav-item i { display: block; font-size: 1.2rem; margin-bottom: 3px; transition: 0.2s; }
+        .nav-item.active { color: var(--primary); }
+        .nav-item.active i { transform: translateY(-3px); text-shadow: 0 0 10px var(--primary); }
+        
+        .cart-badge { position: absolute; top: 5px; right: 25%; background: var(--danger); color: white; font-size: 0.6rem; padding: 2px 5px; border-radius: 10px; }
+
+        /* --- Auth Form --- */
+        .form-group { margin-bottom: 15px; }
+        .form-label { display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 5px; }
+        .form-input { width: 100%; background: #000; border: var(--border); padding: 12px; color: white; border-radius: 8px; outline: none; }
+        .form-input:focus { border-color: var(--primary); }
+
+        /* --- Toast --- */
+        .toast-container { position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%); z-index: 200; pointer-events: none; }
+        .toast { background: #222; color: white; padding: 10px 20px; border-radius: 30px; margin-top: 10px; border: 1px solid #444; opacity: 0; transform: translateY(20px); transition: 0.3s; pointer-events: auto; font-size: 0.9rem; display: flex; align-items: center; gap: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .toast.show { opacity: 1; transform: translateY(0); }
+
+        /* Specific Views */
+        #cart-items-container { max-height: 50vh; overflow-y: auto; }
+        .cart-item { display: flex; gap: 10px; margin-bottom: 15px; background: #222; padding: 10px; border-radius: 8px; }
+        .cart-item img { width: 60px; height: 60px; border-radius: 6px; object-fit: cover; }
+        .order-card { background: #1a1a1a; padding: 15px; border-radius: 8px; border: var(--border); margin-bottom: 15px; }
+        .status-badge { padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; text-transform: uppercase; font-weight: bold; }
+        .status-paid { background: rgba(0, 255, 136, 0.2); color: var(--success); }
+        .status-pending { background: rgba(255, 200, 0, 0.2); color: #ffc800; }
+
+        /* Product Detail */
+        .detail-img { width: 100%; border-radius: 12px; margin-bottom: 15px; }
+        .detail-tags span { background: #333; font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; margin-right: 5px; color: #ccc; }
+        .detail-desc { color: #ddd; line-height: 1.6; font-size: 0.95rem; margin: 15px 0; }
+        
+        /* Banner */
+        .hero-banner { background: linear-gradient(45deg, #1a1a1a, #2a2a2a); border-radius: 12px; padding: 20px; margin: 15px; text-align: center; border: 1px solid var(--secondary); box-shadow: 0 0 20px rgba(188, 19, 254, 0.2); }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="logo">ARISTO</div>
+        <div class="search-bar">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="search-input" placeholder="Search products..." id="searchInput">
+        </div>
+        <div style="position: relative;" onclick="app.toggleCart()">
+            <i class="fas fa-shopping-cart" style="font-size: 1.2rem; cursor: pointer;"></i>
+            <span class="cart-badge hidden" id="headerCartCount">0</span>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main id="mainContainer">
+        <!-- Home View -->
+        <div id="view-home" class="view">
+            <div id="announcement-area"></div>
+            
+            <div class="category-scroll" id="categoryList">
+                <div class="chip active" onclick="app.filterCategory('All', this)">All</div>
+                <!-- Categories injected here -->
+            </div>
+
+            <div class="container flex justify-between items-center" style="padding-bottom:0;">
+                <h3 style="margin:0">Latest Drops</h3>
+                <div class="text-sm text-primary" onclick="app.showSortModal()"><i class="fas fa-sort-amount-down"></i> Filter</div>
+            </div>
+
+            <div class="product-grid" id="productGrid">
+                <!-- Products injected here -->
+                <div class="skeleton" style="height: 250px;"></div>
+                <div class="skeleton" style="height: 250px;"></div>
+            </div>
+        </div>
+
+        <!-- Wishlist View -->
+        <div id="view-wishlist" class="view hidden container">
+            <h2>Your Wishlist</h2>
+            <div class="product-grid" id="wishlistGrid"></div>
+        </div>
+
+        <!-- Orders View -->
+        <div id="view-orders" class="view hidden container">
+            <h2>Your Orders</h2>
+            <div id="ordersList"></div>
+        </div>
+
+        <!-- Profile View -->
+        <div id="view-profile" class="view hidden container">
+            <div id="auth-ui" class="text-center" style="margin-top: 50px;">
+                <i class="fas fa-user-circle" style="font-size: 4rem; color: var(--secondary); margin-bottom: 20px;"></i>
+                <h3>Welcome to Aristo</h3>
+                <p class="text-muted">Sign in to manage orders and wishlist.</p>
+                <button class="btn" onclick="app.openAuthModal('login')">Login</button>
+                <button class="btn btn-outline" onclick="app.openAuthModal('signup')">Sign Up</button>
+            </div>
+            
+            <div id="profile-ui" class="hidden">
+                <div class="flex items-center gap-4" style="margin-bottom: 20px;">
+                    <div style="width: 60px; height: 60px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: black; font-weight: bold;" id="profileAvatar">U</div>
+                    <div>
+                        <h3 style="margin:0" id="profileName">User</h3>
+                        <p style="margin:0; color: var(--text-muted); font-size: 0.9rem;" id="profileEmail">email@example.com</p>
+                    </div>
+                </div>
+                
+                <div style="background: var(--bg-card); border-radius: 12px; overflow: hidden; border: var(--border);">
+                    <div style="padding: 15px; border-bottom: 1px solid #333; cursor: pointer;" onclick="app.switchView('orders')">
+                        <i class="fas fa-box" style="width: 25px;"></i> My Orders
+                    </div>
+                    <div style="padding: 15px; border-bottom: 1px solid #333; cursor: pointer;" onclick="app.openSettings()">
+                        <i class="fas fa-cog" style="width: 25px;"></i> Settings & Policies
+                    </div>
+                    <div style="padding: 15px; cursor: pointer; color: var(--danger);" onclick="auth.signOut()">
+                        <i class="fas fa-sign-out-alt" style="width: 25px;"></i> Logout
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="app.switchView('home')" id="nav-home">
+            <i class="fas fa-home"></i> Home
+        </div>
+        <div class="nav-item" onclick="app.switchView('wishlist')" id="nav-wishlist">
+            <i class="fas fa-heart"></i> Saved
+        </div>
+        <div class="nav-item" onclick="app.switchView('orders')" id="nav-orders">
+            <i class="fas fa-receipt"></i> Orders
+        </div>
+        <div class="nav-item" onclick="app.switchView('profile')" id="nav-profile">
+            <i class="fas fa-user"></i> Profile
+        </div>
+    </nav>
+
+    <!-- Product Detail Modal -->
+    <div class="modal-overlay" id="productModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="app.closeModal('productModal')">&times;</button>
+            <div id="modalProductContent"></div>
+        </div>
+    </div>
+
+    <!-- Cart Modal (Sidebar Style on Desktop, Sheet on Mobile) -->
+    <div class="modal-overlay" id="cartModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="app.closeModal('cartModal')">&times;</button>
+            <h2>Your Cart (<span id="cartCount">0</span>)</h2>
+            <div id="cart-items-container"></div>
+            
+            <div style="margin-top: 20px; border-top: 1px solid #333; padding-top: 15px;">
+                <div class="flex justify-between" style="margin-bottom: 10px;">
+                    <span>Subtotal</span>
+                    <span class="font-bold text-primary" id="cartTotal">₹0</span>
+                </div>
+                <div class="form-group flex gap-2">
+                    <input type="text" class="form-input" placeholder="Coupon Code" id="couponInput">
+                    <button class="btn btn-sm btn-outline" onclick="app.applyCoupon()">Apply</button>
+                </div>
+                <button class="btn" style="width: 100%;" onclick="app.startCheckout()">Checkout Securely</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div class="modal-overlay" id="authModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <button class="modal-close" onclick="app.closeModal('authModal')">&times;</button>
+            <h2 id="authTitle" class="text-center">Login</h2>
+            <form id="authForm" onsubmit="app.handleAuth(event)">
+                <div class="form-group" id="nameGroup">
+                    <label class="form-label">Display Name</label>
+                    <input type="text" class="form-input" id="authName">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" id="authEmail" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="authPass" required>
+                </div>
+                <button type="submit" class="btn" style="width: 100%;">Continue</button>
+            </form>
+            <p class="text-center text-sm text-muted" style="margin-top: 15px; cursor: pointer;" onclick="app.toggleAuthMode()" id="authSwitch">New? Create account</p>
+        </div>
+    </div>
+
+    <!-- Settings/Policies Modal -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="app.closeModal('settingsModal')">&times;</button>
+            <h2>Site Info & Policies</h2>
+            <div id="settingsContent" class="text-muted" style="line-height: 1.6;"></div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, arrayUnion, arrayRemove, addDoc, query, where, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // ==========================================
+        // CONFIGURATION - REPLACE THESE VALUES
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyCkndE5h7HOLTg2xEs7mgKimJIwodApFJs",
+            authDomain: "andronix-bcdf7.firebaseapp.com",
+            projectId: "andronix-bcdf7",
+            storageBucket: "andronix-bcdf7.appspot.com",
+            messagingSenderId: "982083836381",
+            appId: "1:982083836381:web:88a162ce883e69d2e73e34"
+        };
+
+        const RAZORPAY_KEY_ID = "rzp_test_YOUR_KEY_HERE"; 
+        // ==========================================
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        // Global State
+        const state = {
+            user: null,
+            products: [],
+            cart: JSON.parse(localStorage.getItem('aristo_cart')) || [],
+            wishlist: [],
+            categories: new Set(),
+            currentView: 'home',
+            siteSettings: {}
+        };
+
+        // --- Core App Logic ---
+        window.app = {
+            init: async () => {
+                app.loadSettings();
+                app.loadProducts();
+                
+                // Auth Listener
+                onAuthStateChanged(auth, async (user) => {
+                    state.user = user;
+                    if (user) {
+                        document.getElementById('auth-ui').classList.add('hidden');
+                        document.getElementById('profile-ui').classList.remove('hidden');
+                        document.getElementById('profileName').textContent = user.displayName || 'User';
+                        document.getElementById('profileEmail').textContent = user.email;
+                        document.getElementById('profileAvatar').textContent = (user.displayName || 'U')[0].toUpperCase();
+                        
+                        // Sync User Data
+                        const userDoc = await getDoc(doc(db, "users", user.uid));
+                        if(userDoc.exists()) {
+                            const data = userDoc.data();
+                            state.wishlist = data.wishlist || [];
+                            // Merge local cart with cloud cart logic could go here
+                            if(data.cart && data.cart.length > 0 && state.cart.length === 0) {
+                                state.cart = data.cart;
+                                app.updateCartUI();
+                            }
+                        } else {
+                            await setDoc(doc(db, "users", user.uid), {
+                                email: user.email,
+                                createdAt: new Date(),
+                                wishlist: [],
+                                cart: [],
+                                isAdmin: false
+                            });
+                        }
+                    } else {
+                        document.getElementById('auth-ui').classList.remove('hidden');
+                        document.getElementById('profile-ui').classList.add('hidden');
+                        state.wishlist = [];
+                    }
+                    app.renderWishlist();
+                });
+
+                // Search Listener
+                let debounceTimer;
+                document.getElementById('searchInput').addEventListener('input', (e) => {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => {
+                        app.renderProducts(e.target.value);
+                    }, 300);
+                });
+            },
+
+            loadSettings: async () => {
+                try {
+                    const docSnap = await getDoc(doc(db, "siteSettings", "config"));
+                    if(docSnap.exists()) {
+                        state.siteSettings = docSnap.data();
+                        document.querySelector('.logo').textContent = state.siteSettings.siteTitle || 'ARISTO';
+                        if(state.siteSettings.announcementsHtml) {
+                            document.getElementById('announcement-area').innerHTML = `<div class="hero-banner">${state.siteSettings.announcementsHtml}</div>`;
+                        }
+                    }
+                } catch(e) { console.log("Settings not loaded", e); }
+            },
+
+            loadProducts: () => {
+                const q = query(collection(db, "products"), where("visible", "==", true));
+                onSnapshot(q, (snapshot) => {
+                    state.products = [];
+                    state.categories.clear();
+                    snapshot.forEach(doc => {
+                        const p = { id: doc.id, ...doc.data() };
+                        state.products.push(p);
+                        if(p.category) state.categories.add(p.category);
+                    });
+                    app.renderCategories();
+                    app.renderProducts();
+                });
+            },
+
+            renderCategories: () => {
+                const container = document.getElementById('categoryList');
+                let html = `<div class="chip active" onclick="app.filterCategory('All', this)">All</div>`;
+                state.categories.forEach(cat => {
+                    html += `<div class="chip" onclick="app.filterCategory('${cat}', this)">${cat}</div>`;
+                });
+                container.innerHTML = html;
+            },
+
+            filterCategory: (cat, el) => {
+                document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+                el.classList.add('active');
+                app.renderProducts('', cat === 'All' ? null : cat);
+            },
+
+            renderProducts: (search = '', category = null) => {
+                const grid = document.getElementById('productGrid');
+                grid.innerHTML = '';
+                
+                let filtered = state.products;
+                
+                if (category) {
+                    filtered = filtered.filter(p => p.category === category);
+                }
+                
+                if (search) {
+                    const term = search.toLowerCase();
+                    filtered = filtered.filter(p => p.title.toLowerCase().includes(term) || (p.tags && p.tags.includes(term)));
+                }
+
+                if(filtered.length === 0) {
+                    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">No products found.</div>';
+                    return;
+                }
+
+                filtered.forEach(p => {
+                    const isFav = state.wishlist.includes(p.id);
+                    const el = document.createElement('div');
+                    el.className = 'product-card';
+                    el.innerHTML = `
+                        <button class="btn-fav ${isFav ? 'active' : ''}" onclick="app.toggleWishlist('${p.id}', this)"><i class="fas fa-heart"></i></button>
+                        ${p.stock < 5 ? '<span class="card-badge" style="background:var(--danger)">Low Stock</span>' : ''}
+                        <img src="${p.thumbnails?.[0] || 'https://via.placeholder.com/300'}" class="card-img" alt="${p.title}" loading="lazy" onclick="app.openProduct('${p.id}')">
+                        <div class="card-body" onclick="app.openProduct('${p.id}')">
+                            <h4 class="card-title">${p.title}</h4>
+                            <div class="flex justify-between items-center" style="margin-top:auto;">
+                                <div class="card-price">₹${p.price}</div>
+                                <div class="text-sm text-muted"><i class="fas fa-star text-primary"></i> ${p.rating || 4.5}</div>
+                            </div>
+                        </div>
+                        <button class="btn" style="border-radius:0;" onclick="app.addToCart('${p.id}')"><i class="fas fa-plus"></i> Add</button>
+                    `;
+                    grid.appendChild(el);
+                });
+            },
+
+            toggleWishlist: async (pid, btn) => {
+                if(!state.user) return app.showToast('Please login first', 'error');
+                const idx = state.wishlist.indexOf(pid);
+                if(idx > -1) {
+                    state.wishlist.splice(idx, 1);
+                    btn.classList.remove('active');
+                    await updateDoc(doc(db, "users", state.user.uid), { wishlist: arrayRemove(pid) });
+                    app.showToast('Removed from wishlist');
+                } else {
+                    state.wishlist.push(pid);
+                    btn.classList.add('active');
+                    await updateDoc(doc(db, "users", state.user.uid), { wishlist: arrayUnion(pid) });
+                    app.showToast('Added to wishlist');
+                }
+                app.renderWishlist(); // update view if active
+            },
+
+            renderWishlist: () => {
+                const grid = document.getElementById('wishlistGrid');
+                grid.innerHTML = '';
+                const items = state.products.filter(p => state.wishlist.includes(p.id));
+                
+                if(items.length === 0) {
+                    grid.innerHTML = '<p class="text-muted text-center">Your wishlist is empty.</p>';
+                    return;
+                }
+                
+                items.forEach(p => {
+                     // Reuse render logic or simplified card
+                     const el = document.createElement('div');
+                     el.className = 'product-card';
+                     el.innerHTML = `
+                        <button class="btn-fav active" onclick="app.toggleWishlist('${p.id}', this)"><i class="fas fa-heart"></i></button>
+                        <img src="${p.thumbnails?.[0]}" class="card-img">
+                        <div class="card-body">
+                            <h4 class="card-title">${p.title}</h4>
+                            <div class="card-price">₹${p.price}</div>
+                            <button class="btn btn-sm btn-outline" onclick="app.openProduct('${p.id}')">View</button>
+                        </div>
+                     `;
+                     grid.appendChild(el);
+                });
+            },
+
+            openProduct: (id) => {
+                const p = state.products.find(x => x.id === id);
+                if(!p) return;
+                
+                const modal = document.getElementById('modalProductContent');
+                const imagesHtml = p.thumbnails.map(url => `<img src="${url}" style="width:60px; height:60px; border-radius:4px; cursor:pointer; object-fit:cover; margin-right:5px;" onclick="document.getElementById('mainDetailImg').src='${url}'">`).join('');
+                
+                modal.innerHTML = `
+                    <img src="${p.thumbnails?.[0]}" class="detail-img" id="mainDetailImg">
+                    <div style="display:flex; overflow-x:auto; margin-bottom:15px;">${imagesHtml}</div>
+                    <h2>${p.title}</h2>
+                    <div class="flex items-center gap-4">
+                        <h3 class="text-primary" style="margin:0;">₹${p.price}</h3>
+                        <span class="text-muted"><i class="fas fa-star text-primary"></i> ${p.rating || 'New'}</span>
+                    </div>
+                    <div class="detail-tags" style="margin-top:10px;">
+                        ${p.tags ? p.tags.map(t => `<span>#${t}</span>`).join('') : ''}
+                    </div>
+                    <div class="detail-desc">${p.descriptionHTML || p.description || 'No description available.'}</div>
+                    
+                    <div class="flex gap-4" style="margin-top:20px;">
+                        <button class="btn" style="flex:1" onclick="app.addToCart('${p.id}'); app.closeModal('productModal');">Add to Cart</button>
+                        <button class="btn btn-outline" style="flex:1" onclick="navigator.share({title:'${p.title}', url:window.location.href})"><i class="fas fa-share-alt"></i> Share</button>
+                    </div>
+                `;
+                
+                document.getElementById('productModal').classList.add('open');
+            },
+
+            // --- Cart Logic ---
+            addToCart: (pid) => {
+                const item = state.cart.find(x => x.pid === pid);
+                if(item) {
+                    item.qty++;
+                } else {
+                    state.cart.push({ pid, qty: 1 });
+                }
+                app.saveCart();
+                app.showToast('Added to Cart');
+            },
+
+            updateCartQty: (pid, delta) => {
+                const item = state.cart.find(x => x.pid === pid);
+                if(item) {
+                    item.qty += delta;
+                    if(item.qty <= 0) state.cart = state.cart.filter(x => x.pid !== pid);
+                    app.saveCart();
+                }
+            },
+
+            saveCart: () => {
+                localStorage.setItem('aristo_cart', JSON.stringify(state.cart));
+                app.updateCartUI();
+                if(state.user) {
+                    // Sync with Firestore debounced/background
+                    updateDoc(doc(db, "users", state.user.uid), { cart: state.cart }).catch(console.error);
+                }
+            },
+
+            updateCartUI: () => {
+                const count = state.cart.reduce((a, b) => a + b.qty, 0);
+                document.getElementById('headerCartCount').textContent = count;
+                document.getElementById('headerCartCount').classList.toggle('hidden', count === 0);
+                document.getElementById('cartCount').textContent = count;
+
+                const container = document.getElementById('cart-items-container');
+                container.innerHTML = '';
+                let total = 0;
+
+                state.cart.forEach(item => {
+                    const p = state.products.find(x => x.id === item.pid);
+                    if(p) {
+                        total += p.price * item.qty;
+                        const el = document.createElement('div');
+                        el.className = 'cart-item';
+                        el.innerHTML = `
+                            <img src="${p.thumbnails?.[0]}">
+                            <div style="flex:1">
+                                <div style="font-weight:600; font-size:0.9rem;">${p.title}</div>
+                                <div class="text-primary">₹${p.price}</div>
+                                <div class="flex items-center gap-2" style="margin-top:5px;">
+                                    <button class="btn btn-sm btn-outline" onclick="app.updateCartQty('${p.id}', -1)">-</button>
+                                    <span>${item.qty}</span>
+                                    <button class="btn btn-sm btn-outline" onclick="app.updateCartQty('${p.id}', 1)">+</button>
+                                </div>
+                            </div>
+                        `;
+                        container.appendChild(el);
+                    }
+                });
+                document.getElementById('cartTotal').textContent = '₹' + total;
+            },
+
+            toggleCart: () => {
+                document.getElementById('cartModal').classList.add('open');
+                app.updateCartUI();
+            },
+
+            // --- Checkout & Razorpay ---
+            startCheckout: async () => {
+                if(!state.user) {
+                    app.closeModal('cartModal');
+                    app.openAuthModal('login');
+                    app.showToast('Please login to checkout');
+                    return;
+                }
+                if(state.cart.length === 0) return;
+
+                const totalAmount = state.cart.reduce((sum, item) => {
+                    const p = state.products.find(x => x.id === item.pid);
+                    return sum + (p ? p.price * item.qty : 0);
+                }, 0);
+
+                // Create Order in Firestore (Pending)
+                const orderData = {
+                    userId: state.user.uid,
+                    items: state.cart,
+                    amount: totalAmount,
+                    status: 'pending', // paid, fulfilled
+                    createdAt: new Date(),
+                    paymentId: null
+                };
+
+                try {
+                    const orderRef = await addDoc(collection(db, "orders"), orderData);
+                    
+                    // Razorpay Options
+                    const options = {
+                        key: RAZORPAY_KEY_ID,
+                        amount: totalAmount * 100, // in paisa
+                        currency: "INR",
+                        name: "Aristo Store",
+                        description: `Order #${orderRef.id.slice(0,6)}`,
+                        handler: async function (response) {
+                            // Client-side success (In production, verify signature on backend)
+                            app.showToast('Payment Successful!', 'success');
+                            
+                            await updateDoc(orderRef, {
+                                status: 'paid',
+                                paymentId: response.razorpay_payment_id,
+                                paidAt: new Date()
+                            });
+
+                            // Clear Cart
+                            state.cart = [];
+                            app.saveCart();
+                            app.closeModal('cartModal');
+                            app.switchView('orders');
+                        },
+                        prefill: {
+                            name: state.user.displayName,
+                            email: state.user.email
+                        },
+                        theme: { color: "#00f3ff" }
+                    };
+
+                    const rzp = new Razorpay(options);
+                    rzp.on('payment.failed', function (response){
+                        app.showToast('Payment Failed: ' + response.error.description);
+                    });
+                    rzp.open();
+
+                } catch (e) {
+                    console.error(e);
+                    app.showToast('Checkout Error');
+                }
+            },
+
+            // --- View Management ---
+            switchView: (viewName) => {
+                // Hide all
+                document.querySelectorAll('.view').forEach(el => el.classList.add('hidden'));
+                document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+                
+                // Show target
+                document.getElementById(`view-${viewName}`).classList.remove('hidden');
+                document.getElementById(`nav-${viewName}`).classList.add('active');
+                
+                state.currentView = viewName;
+                window.scrollTo(0,0);
+
+                if(viewName === 'orders') app.loadOrders();
+            },
+
+            loadOrders: () => {
+                if(!state.user) return;
+                const container = document.getElementById('ordersList');
+                container.innerHTML = '<div class="skeleton" style="height:100px;"></div>';
+
+                const q = query(collection(db, "orders"), where("userId", "==", state.user.uid), orderBy("createdAt", "desc"));
+                onSnapshot(q, (snapshot) => {
+                    container.innerHTML = '';
+                    if(snapshot.empty) {
+                        container.innerHTML = '<p class="text-muted text-center">No orders found.</p>';
+                        return;
+                    }
+
+                    snapshot.forEach(docSnap => {
+                        const o = docSnap.data();
+                        const date = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleDateString() : 'N/A';
+                        const el = document.createElement('div');
+                        el.className = 'order-card';
+                        
+                        let itemsHtml = '';
+                        o.items.forEach(i => {
+                            const p = state.products.find(x => x.id === i.pid);
+                            if(p) itemsHtml += `<div class="text-sm text-muted">${p.title} x ${i.qty}</div>`;
+                        });
+
+                        const canDownload = o.status === 'paid' || o.status === 'fulfilled';
+
+                        el.innerHTML = `
+                            <div class="flex justify-between items-center" style="margin-bottom:10px;">
+                                <span class="font-bold">#${docSnap.id.slice(0,8)}</span>
+                                <span class="status-badge status-${o.status}">${o.status}</span>
+                            </div>
+                            <div style="margin-bottom:10px;">${itemsHtml}</div>
+                            <div class="flex justify-between items-center" style="border-top:1px solid #333; padding-top:10px;">
+                                <span>₹${o.amount}</span>
+                                <span class="text-sm text-muted">${date}</span>
+                            </div>
+                            ${canDownload ? `<button class="btn btn-sm" style="margin-top:10px; width:100%;" onclick="app.showDownloads('${docSnap.id}')"><i class="fas fa-download"></i> Access Files</button>` : ''}
+                        `;
+                        container.appendChild(el);
+                    });
+                });
+            },
+
+            showDownloads: (oid) => {
+               // In a real app, query products to get download links.
+               // Here we just simulate access.
+               app.showToast('Download links sent to email (Demo)');
+            },
+
+            // --- Auth & Modals ---
+            openAuthModal: (mode) => {
+                document.getElementById('authModal').classList.add('open');
+                state.authMode = mode;
+                document.getElementById('authTitle').textContent = mode === 'login' ? 'Login' : 'Sign Up';
+                document.getElementById('nameGroup').classList.toggle('hidden', mode === 'login');
+                document.getElementById('authSwitch').textContent = mode === 'login' ? 'New? Create account' : 'Have account? Login';
+            },
+
+            toggleAuthMode: () => {
+                app.openAuthModal(state.authMode === 'login' ? 'signup' : 'login');
+            },
+
+            handleAuth: async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('authEmail').value;
+                const pass = document.getElementById('authPass').value;
+                const name = document.getElementById('authName').value;
+
+                try {
+                    if(state.authMode === 'signup') {
+                        const cred = await createUserWithEmailAndPassword(auth, email, pass);
+                        await updateProfile(cred.user, { displayName: name });
+                        await setDoc(doc(db, "users", cred.user.uid), {
+                            email, displayName: name, role: 'user', createdAt: new Date()
+                        });
+                        app.showToast('Welcome, ' + name);
+                    } else {
+                        await signInWithEmailAndPassword(auth, email, pass);
+                        app.showToast('Welcome back!');
+                    }
+                    app.closeModal('authModal');
+                } catch(err) {
+                    app.showToast(err.message.replace('Firebase:', ''));
+                }
+            },
+
+            openSettings: () => {
+                const s = state.siteSettings;
+                document.getElementById('settingsContent').innerHTML = `
+                    <h3>Contact</h3>
+                    <p>Email: ${s.contactEmail || '-'}</p>
+                    <p>Phone: ${s.contactPhone || '-'}</p>
+                    <hr style="border-color:#333">
+                    <h3>Refund Policy</h3>
+                    <div>${s.refundPolicyHtml || 'No refunds on digital items.'}</div>
+                `;
+                document.getElementById('settingsModal').classList.add('open');
+            },
+
+            closeModal: (id) => {
+                document.getElementById(id).classList.remove('open');
+            },
+
+            showToast: (msg, type='info') => {
+                const div = document.createElement('div');
+                div.className = 'toast';
+                div.innerHTML = `<i class="fas ${type==='success'?'fa-check-circle':'fa-info-circle'}" style="color:${type==='success'?'var(--success)':'var(--primary)'}"></i> ${msg}`;
+                document.getElementById('toastContainer').appendChild(div);
+                setTimeout(()=>div.classList.add('show'), 10);
+                setTimeout(()=>{
+                    div.classList.remove('show');
+                    setTimeout(()=>div.remove(), 300);
+                }, 3000);
+            },
+            
+            showSortModal: () => {
+                // Simple sort logic could go here
+                app.showToast('Sort feature implemented in next update');
+            }
+        };
+
+        // Start
+        app.init();
+        window.auth = auth;
+    </script>
+</body>
+</html>
+
