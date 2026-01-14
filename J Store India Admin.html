@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J Store Admin | Control Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { brand: '#FF6B00', dark: '#121212' }, fontFamily: { sans: ['Inter', 'sans-serif'] } } }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen">
+
+    <div id="login-screen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md border border-gray-100">
+            <div class="text-center mb-10">
+                <img src="https://i.ibb.co/QFh9dmCW/IMG-20260110-153236.png" class="h-16 mx-auto mb-4">
+                <h1 class="text-2xl font-bold">Admin Login</h1>
+                <p class="text-gray-400 text-sm">Secure Management Portal</p>
+            </div>
+            <form onsubmit="event.preventDefault(); admin.login()">
+                <div class="space-y-4 mb-8">
+                    <input id="adm-email" type="email" placeholder="Admin Email" class="w-full p-4 border rounded-2xl outline-none focus:border-brand">
+                    <input id="adm-pass" type="password" placeholder="Password" class="w-full p-4 border rounded-2xl outline-none focus:border-brand">
+                </div>
+                <button type="submit" class="w-full bg-dark text-white py-4 rounded-2xl font-bold hover:bg-brand transition-all">Unlock Dashboard</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="admin-dashboard" class="hidden min-h-screen flex flex-col md:flex-row">
+        <!-- Sidebar -->
+        <aside class="w-full md:w-64 bg-dark text-white flex-shrink-0">
+            <div class="p-6 border-b border-gray-800 flex items-center gap-3">
+                <img src="https://i.ibb.co/6jW8bGb/1001836487-removebg-preview.png" class="h-8 filter brightness-0 invert">
+                <span class="font-bold">ADMIN</span>
+            </div>
+            <nav class="p-4 space-y-2">
+                <button onclick="admin.view('dash')" class="w-full text-left p-4 rounded-xl hover:bg-gray-800 active-nav transition">Dashboard</button>
+                <button onclick="admin.view('orders')" class="w-full text-left p-4 rounded-xl hover:bg-gray-800 transition">Orders</button>
+                <button onclick="admin.view('products')" class="w-full text-left p-4 rounded-xl hover:bg-gray-800 transition">Products</button>
+                <button onclick="location.reload()" class="w-full text-left p-4 rounded-xl text-red-400 hover:bg-red-900/20 mt-20">Logout</button>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-grow p-8">
+            <header class="flex justify-between items-center mb-10">
+                <h2 id="view-title" class="text-3xl font-bold text-gray-800">Sales Overview</h2>
+                <div class="bg-white px-6 py-2 rounded-full shadow-sm text-sm border flex items-center gap-3">
+                    <span class="w-2 h-2 bg-green-500 rounded-full"></span> Admin Online
+                </div>
+            </header>
+
+            <div id="admin-content">
+                <!-- Content injected here -->
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const admin = {
+            login: () => {
+                // For demo purposes, any login works. In production, use Supabase Auth.
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('admin-dashboard').classList.remove('hidden');
+                admin.view('dash');
+            },
+
+            view: (tab) => {
+                const content = document.getElementById('admin-content');
+                const title = document.getElementById('view-title');
+                
+                if(tab === 'dash') {
+                    title.innerText = 'Sales Dashboard';
+                    content.innerHTML = `
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                            <div class="bg-white p-8 rounded-3xl shadow-sm border-l-8 border-brand">
+                                <p class="text-gray-400 text-sm mb-2 font-bold uppercase">Total Revenue</p>
+                                <h3 class="text-3xl font-bold">₹1,45,290</h3>
+                            </div>
+                            <div class="bg-white p-8 rounded-3xl shadow-sm border-l-8 border-blue-500">
+                                <p class="text-gray-400 text-sm mb-2 font-bold uppercase">Active Orders</p>
+                                <h3 class="text-3xl font-bold">24</h3>
+                            </div>
+                            <div class="bg-white p-8 rounded-3xl shadow-sm border-l-8 border-green-500">
+                                <p class="text-gray-400 text-sm mb-2 font-bold uppercase">Customers</p>
+                                <h3 class="text-3xl font-bold">118</h3>
+                            </div>
+                        </div>
+                    `;
+                } else if(tab === 'orders') {
+                    title.innerText = 'Order Management';
+                    const history = JSON.parse(localStorage.getItem('jstore_history')) || [];
+                    content.innerHTML = `
+                        <div class="bg-white rounded-3xl shadow-sm overflow-hidden border">
+                            <table class="w-full text-left">
+                                <thead class="bg-gray-50 border-b">
+                                    <tr><th class="p-6">Order ID</th><th class="p-6">Date</th><th class="p-6">Amount</th><th class="p-6">Status</th><th class="p-6">Action</th></tr>
+                                </thead>
+                                <tbody>
+                                    ${history.map(o => `
+                                        <tr class="border-b last:border-0 hover:bg-gray-50">
+                                            <td class="p-6 font-bold text-brand">#${o.id}</td>
+                                            <td class="p-6 text-gray-500 text-sm">${o.date}</td>
+                                            <td class="p-6 font-bold">₹${o.total}</td>
+                                            <td class="p-6"><span class="px-3 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700">${o.status}</span></td>
+                                            <td class="p-6">
+                                                <button class="bg-dark text-white px-4 py-2 rounded-lg text-xs font-bold">Update</button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                            ${history.length === 0 ? '<p class="p-10 text-center text-gray-400 italic">No orders received via local session yet.</p>' : ''}
+                        </div>
+                    `;
+                } else if(tab === 'products') {
+                    title.innerText = 'Product Inventory';
+                    content.innerHTML = `
+                        <div class="flex justify-end mb-6">
+                            <button class="bg-brand text-white px-6 py-3 rounded-xl font-bold">+ Add New Product</button>
+                        </div>
+                        <div class="bg-white rounded-3xl shadow-sm overflow-hidden border">
+                            <table class="w-full text-left">
+                                <thead class="bg-gray-50 border-b">
+                                    <tr><th class="p-6">Product</th><th class="p-6">Price</th><th class="p-6">Stock</th><th class="p-6">Actions</th></tr>
+                                </thead>
+                                <tbody id="prod-list">
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+            }
+        };
+    </script>
+</body>
+</html>
+

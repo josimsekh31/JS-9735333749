@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J Store India | Premium Shopping</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: '#FF6B00', // Professional Orange
+                        dark: '#121212',  // Deep Black
+                        light: '#FFFFFF'  // White
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
+        .transition-soft { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .active-tab { border-bottom: 2px solid #FF6B00; color: #FF6B00; }
+        [onclick] { cursor: pointer; }
+    </style>
+</head>
+<body class="bg-gray-50 text-dark font-sans flex flex-col min-h-screen">
+
+    <!-- Navigation -->
+    <nav class="bg-white border-b sticky top-0 z-50">
+        <div class="container mx-auto px-4 h-20 flex items-center justify-between">
+            <!-- Logo -->
+            <div class="flex items-center gap-3" onclick="router.navigate('home')">
+                <img src="https://i.ibb.co/QFh9dmCW/IMG-20260110-153236.png" alt="J Store Logo" class="h-12 w-auto">
+                <div class="hidden md:block">
+                    <h1 class="text-xl font-bold leading-none">J STORE</h1>
+                    <span class="text-[10px] tracking-[0.2em] text-brand uppercase font-bold">India</span>
+                </div>
+            </div>
+
+            <!-- Links -->
+            <div class="hidden md:flex items-center gap-8 font-medium text-sm">
+                <button onclick="router.navigate('home')" class="hover:text-brand transition-soft">Home</button>
+                <button onclick="router.navigate('shop')" class="hover:text-brand transition-soft">Shop</button>
+                <button onclick="router.navigate('profile')" class="hover:text-brand transition-soft">Account</button>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center gap-5">
+                <div class="relative group" onclick="router.navigate('cart')">
+                    <svg class="w-6 h-6 text-gray-700 group-hover:text-brand transition-soft" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                    <span id="cart-count" class="absolute -top-2 -right-2 bg-brand text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white">0</span>
+                </div>
+                <div id="nav-auth-state">
+                    <!-- Dynamic -->
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main id="view-container" class="flex-grow container mx-auto px-4 py-8">
+        <!-- Views injected here -->
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-12 mt-20">
+        <div class="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-10">
+            <div class="col-span-1 md:col-span-2">
+                <img src="https://i.ibb.co/6jW8bGb/1001836487-removebg-preview.png" alt="Logo" class="h-16 mb-4 filter brightness-0 invert">
+                <p class="text-gray-400 text-sm max-w-sm">J Store India brings you premium electronics and lifestyle products with a focus on quality and customer satisfaction.</p>
+            </div>
+            <div>
+                <h4 class="font-bold mb-4">Quick Links</h4>
+                <ul class="text-gray-400 text-sm space-y-2">
+                    <li onclick="router.navigate('shop')">All Products</li>
+                    <li onclick="router.navigate('profile')">Order Tracking</li>
+                    <li>Privacy Policy</li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold mb-4">Contact</h4>
+                <p class="text-gray-400 text-sm">Email: support@jstore.in</p>
+                <p class="text-gray-400 text-sm">Location: Mumbai, India</p>
+            </div>
+        </div>
+        <div class="text-center mt-12 pt-8 border-t border-gray-800 text-gray-500 text-xs">
+            &copy; 2026 J Store India. Built for performance.
+        </div>
+    </footer>
+
+    <script>
+        // --- SUPABASE CONFIG ---
+        // Replace with your actual credentials
+        const SUPABASE_URL = ""; 
+        const SUPABASE_ANON_KEY = "";
+        const supabase = (SUPABASE_URL && SUPABASE_ANON_KEY) ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+        // --- DEMO DATA ---
+        const DEMO_PRODUCTS = [
+            { id: 1, title: 'J-Series Wireless Buds', price: 2499, stock: 15, category: 'Audio', image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80', description: 'Experience pure bass with J-Series active noise cancellation.' },
+            { id: 2, title: 'Titanium Smart Watch', price: 4999, stock: 8, category: 'Wearables', image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&q=80', description: 'Advanced health tracking in a premium titanium body.' },
+            { id: 3, title: 'Stealth Gaming Mouse', price: 1299, stock: 20, category: 'Computing', image: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=500&q=80', description: '12,000 DPI for precision gaming sessions.' },
+            { id: 4, title: 'Ultra Slim Powerbank', price: 1899, stock: 12, category: 'Accessories', image: 'https://images.unsplash.com/photo-1609591035230-84a81b75b05d?w=500&q=80', description: '20,000mAh in a pocket-friendly design.' },
+            { id: 5, title: 'Mechanical RGB Keyboard', price: 3499, stock: 5, category: 'Computing', image: 'https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?w=500&q=80', description: 'Blue switches with customizable RGB lighting.' },
+            { id: 6, title: 'Active ANC Headphones', price: 7999, stock: 10, category: 'Audio', image: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=500&q=80', description: 'Lossless audio for the ultimate audiophile.' },
+            { id: 7, title: 'Leather Laptop Sleeve', price: 999, stock: 25, category: 'Lifestyle', image: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=500&q=80', description: 'Genuine leather protection for your device.' },
+            { id: 8, title: '4K Action Camera', price: 12499, stock: 3, category: 'Gadgets', image: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=500&q=80', description: 'Capture your adventures in stunning 4K 60FPS.' },
+            { id: 9, title: 'Portable Bluetooth Speaker', price: 1599, stock: 18, category: 'Audio', image: 'https://images.unsplash.com/photo-1608156639585-b3a032ef9689?w=500&q=80', description: 'IPX7 waterproof with 12-hour battery life.' },
+            { id: 10, title: 'Minimalist Desk Lamp', price: 2199, stock: 7, category: 'Lifestyle', image: 'https://images.unsplash.com/photo-1534073828943-f801091bb18c?w=500&q=80', description: 'Eye-care LED with touch control dimming.' }
+        ];
+
+        // --- STATE MANAGEMENT ---
+        let cart = JSON.parse(localStorage.getItem('jstore_cart')) || [];
+        let currentUser = null;
+
+        // --- ROUTER & VIEWS ---
+        const router = {
+            navigate: (view, id = null) => {
+                const container = document.getElementById('view-container');
+                container.innerHTML = '<div class="flex justify-center py-20"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div></div>';
+                
+                setTimeout(() => {
+                    switch(view) {
+                        case 'home': views.home(container); break;
+                        case 'shop': views.shop(container); break;
+                        case 'product': views.productDetails(container, id); break;
+                        case 'cart': views.cart(container); break;
+                        case 'checkout': views.checkout(container); break;
+                        case 'profile': views.profile(container); break;
+                        case 'auth': views.auth(container); break;
+                        default: views.home(container);
+                    }
+                    window.scrollTo(0,0);
+                }, 300);
+            }
+        };
+
+        const views = {
+            home: (c) => {
+                c.innerHTML = `
+                    <div class="relative rounded-3xl overflow-hidden bg-dark mb-12 h-[500px]">
+                        <img src="https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=1600" class="absolute inset-0 w-full h-full object-cover opacity-40">
+                        <div class="relative h-full flex flex-col justify-center px-8 md:px-20">
+                            <span class="text-brand font-bold tracking-widest mb-4">NEW COLLECTION</span>
+                            <h2 class="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">Elevate Your <br> Tech Lifestyle</h2>
+                            <p class="text-gray-300 max-w-lg mb-8">Premium gadgets curated for the modern Indian professional. Quality guaranteed.</p>
+                            <button onclick="router.navigate('shop')" class="bg-brand text-white px-10 py-4 rounded-full font-bold w-max hover:bg-white hover:text-brand transition-soft">
+                                Shop All Products
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center mb-8">
+                        <h3 class="text-2xl font-bold">Featured Products</h3>
+                        <button onclick="router.navigate('shop')" class="text-brand font-semibold text-sm">View All &rarr;</button>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        ${DEMO_PRODUCTS.slice(0, 4).map(p => components.productCard(p)).join('')}
+                    </div>
+                `;
+            },
+
+            shop: (c) => {
+                c.innerHTML = `
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+                        <h2 class="text-3xl font-bold">Our Store</h2>
+                        <div class="flex gap-2">
+                            <input type="text" placeholder="Search products..." class="px-4 py-2 border rounded-lg outline-none focus:border-brand w-64">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                        ${DEMO_PRODUCTS.map(p => components.productCard(p)).join('')}
+                    </div>
+                `;
+            },
+
+            productDetails: (c, id) => {
+                const product = DEMO_PRODUCTS.find(p => p.id == id);
+                if(!product) return router.navigate('shop');
+                
+                c.innerHTML = `
+                    <div class="grid md:grid-cols-2 gap-12 max-w-5xl mx-auto py-10">
+                        <div class="bg-white p-4 rounded-3xl border">
+                            <img src="${product.image}" class="w-full h-auto rounded-2xl">
+                        </div>
+                        <div class="flex flex-col justify-center">
+                            <span class="text-brand font-bold text-sm mb-2">${product.category}</span>
+                            <h2 class="text-4xl font-bold mb-4">${product.title}</h2>
+                            <p class="text-gray-500 mb-8 leading-relaxed">${product.description}</p>
+                            <div class="flex items-center gap-6 mb-10">
+                                <span class="text-3xl font-bold">₹${product.price}</span>
+                                <span class="text-xs text-green-600 font-bold bg-green-50 px-3 py-1 rounded-full">In Stock (${product.stock})</span>
+                            </div>
+                            <button onclick="actions.addToCart(${product.id})" class="bg-dark text-white py-4 rounded-xl font-bold hover:bg-brand transition-soft">
+                                Add to Shopping Bag
+                            </button>
+                        </div>
+                    </div>
+                `;
+            },
+
+            cart: (c) => {
+                if(cart.length === 0) {
+                    c.innerHTML = `<div class="text-center py-20"><svg class="w-20 h-20 mx-auto text-gray-200 mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg><h3 class="text-xl font-bold mb-4">Your bag is empty</h3><button onclick="router.navigate('shop')" class="bg-brand text-white px-8 py-3 rounded-full">Shop Now</button></div>`;
+                    return;
+                }
+                const total = cart.reduce((s, i) => s + (i.price * i.qty), 0);
+                c.innerHTML = `
+                    <h2 class="text-3xl font-bold mb-10">Shopping Bag</h2>
+                    <div class="grid lg:grid-cols-3 gap-10">
+                        <div class="lg:col-span-2 space-y-4">
+                            ${cart.map(item => `
+                                <div class="bg-white p-4 rounded-2xl border flex items-center gap-6">
+                                    <img src="${item.image}" class="w-24 h-24 rounded-xl object-cover">
+                                    <div class="flex-grow">
+                                        <h4 class="font-bold">${item.title}</h4>
+                                        <p class="text-gray-500 text-sm">₹${item.price}</p>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <button onclick="actions.updateQty(${item.id}, -1)" class="w-8 h-8 rounded border hover:bg-gray-100">-</button>
+                                        <span class="font-bold">${item.qty}</span>
+                                        <button onclick="actions.updateQty(${item.id}, 1)" class="w-8 h-8 rounded border hover:bg-gray-100">+</button>
+                                    </div>
+                                    <button onclick="actions.removeFromCart(${item.id})" class="text-red-500 p-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="bg-white p-8 rounded-3xl border h-max">
+                            <h4 class="font-bold text-xl mb-6">Summary</h4>
+                            <div class="space-y-3 mb-6">
+                                <div class="flex justify-between text-gray-500"><span>Subtotal</span><span>₹${total}</span></div>
+                                <div class="flex justify-between text-gray-500"><span>Shipping</span><span class="text-green-600 font-bold uppercase text-xs">Free</span></div>
+                            </div>
+                            <div class="border-t pt-4 flex justify-between font-bold text-2xl mb-8"><span>Total</span><span>₹${total}</span></div>
+                            <button onclick="router.navigate('checkout')" class="w-full bg-brand text-white py-4 rounded-xl font-bold shadow-lg shadow-orange-200">Proceed to Checkout</button>
+                        </div>
+                    </div>
+                `;
+            },
+
+            checkout: (c) => {
+                const total = cart.reduce((s, i) => s + (i.price * i.qty), 0);
+                c.innerHTML = `
+                    <div class="max-w-4xl mx-auto grid md:grid-cols-2 gap-10">
+                        <div>
+                            <h2 class="text-2xl font-bold mb-6 text-brand">Checkout Details</h2>
+                            <form id="checkout-form" class="space-y-4">
+                                <input type="text" placeholder="Full Name" required class="w-full p-4 border rounded-xl outline-none focus:border-brand bg-white">
+                                <input type="email" placeholder="Email" required class="w-full p-4 border rounded-xl outline-none focus:border-brand bg-white">
+                                <input type="text" placeholder="Full Address" required class="w-full p-4 border rounded-xl outline-none focus:border-brand bg-white">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <input type="text" placeholder="City" required class="w-full p-4 border rounded-xl outline-none focus:border-brand bg-white">
+                                    <input type="text" placeholder="Pincode" required class="w-full p-4 border rounded-xl outline-none focus:border-brand bg-white">
+                                </div>
+                                <h4 class="font-bold pt-4">Payment Method</h4>
+                                <div class="flex flex-col gap-2">
+                                    <label class="flex items-center gap-3 p-4 border rounded-xl cursor-pointer bg-white">
+                                        <input type="radio" name="pay" checked> Cash on Delivery
+                                    </label>
+                                    <label class="flex items-center gap-3 p-4 border rounded-xl cursor-pointer bg-white opacity-50">
+                                        <input type="radio" name="pay" disabled> Online Payment (UPI/Cards)
+                                    </label>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="bg-gray-100 p-8 rounded-3xl">
+                            <h4 class="font-bold text-xl mb-6">Review Order</h4>
+                            <div class="space-y-4 mb-6">
+                                ${cart.map(i => `<div class="flex justify-between text-sm"><span>${i.qty}x ${i.title}</span><span class="font-medium">₹${i.price * i.qty}</span></div>`).join('')}
+                            </div>
+                            <div class="border-t pt-4 flex justify-between font-bold text-xl mb-8"><span>Total</span><span>₹${total}</span></div>
+                            <button onclick="actions.placeOrder()" class="w-full bg-dark text-white py-4 rounded-xl font-bold hover:bg-brand transition-soft">Place Order Now</button>
+                        </div>
+                    </div>
+                `;
+            },
+
+            profile: (c) => {
+                const history = JSON.parse(localStorage.getItem('jstore_history')) || [];
+                c.innerHTML = `
+                    <div class="max-w-2xl mx-auto">
+                        <div class="bg-white p-8 rounded-3xl border mb-8 flex items-center gap-6">
+                            <div class="w-20 h-20 bg-brand/10 rounded-full flex items-center justify-center text-brand text-3xl font-bold">
+                                J
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-bold">Welcome, Guest</h2>
+                                <p class="text-gray-500">Member since Jan 2026</p>
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-bold mb-6">Order History</h3>
+                        <div class="space-y-4">
+                            ${history.length > 0 ? history.map(o => `
+                                <div class="bg-white p-6 rounded-2xl border flex justify-between items-center">
+                                    <div>
+                                        <p class="font-bold text-brand">#${o.id}</p>
+                                        <p class="text-sm text-gray-500">${o.date}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-bold">₹${o.total}</p>
+                                        <span class="text-[10px] font-bold uppercase px-2 py-1 rounded-full bg-yellow-100 text-yellow-700">${o.status}</span>
+                                    </div>
+                                </div>
+                            `).join('') : `<p class="text-center text-gray-400 py-10">No orders yet.</p>`}
+                        </div>
+                    </div>
+                `;
+            }
+        };
+
+        const components = {
+            productCard: (p) => `
+                <div class="product-card bg-white rounded-3xl border overflow-hidden transition-soft flex flex-col h-full">
+                    <div class="p-4 flex-grow" onclick="router.navigate('product', ${p.id})">
+                        <img src="${p.image}" class="w-full h-48 object-cover rounded-2xl mb-4">
+                        <span class="text-[10px] font-bold text-brand uppercase tracking-widest">${p.category}</span>
+                        <h4 class="font-bold text-gray-900 group-hover:text-brand transition-soft truncate">${p.title}</h4>
+                        <p class="text-lg font-bold text-dark mt-2">₹${p.price}</p>
+                    </div>
+                    <div class="p-4 pt-0">
+                        <button onclick="actions.addToCart(${p.id})" class="w-full bg-gray-50 text-dark py-3 rounded-xl font-bold text-sm hover:bg-brand hover:text-white transition-soft">
+                            Add To Cart
+                        </button>
+                    </div>
+                </div>
+            `
+        };
+
+        const actions = {
+            addToCart: (id) => {
+                const product = DEMO_PRODUCTS.find(p => p.id == id);
+                const existing = cart.find(i => i.id == id);
+                if(existing) existing.qty++;
+                else cart.push({...product, qty: 1});
+                actions.saveCart();
+                actions.toast(`${product.title} added to cart!`);
+            },
+            updateQty: (id, mod) => {
+                const item = cart.find(i => i.id == id);
+                if(item) {
+                    item.qty += mod;
+                    if(item.qty <= 0) cart = cart.filter(i => i.id != id);
+                    actions.saveCart();
+                    router.navigate('cart');
+                }
+            },
+            removeFromCart: (id) => {
+                cart = cart.filter(i => i.id != id);
+                actions.saveCart();
+                router.navigate('cart');
+            },
+            saveCart: () => {
+                localStorage.setItem('jstore_cart', JSON.stringify(cart));
+                document.getElementById('cart-count').innerText = cart.reduce((s, i) => s + i.qty, 0);
+            },
+            placeOrder: () => {
+                const total = cart.reduce((s, i) => s + (i.price * i.qty), 0);
+                const order = {
+                    id: 'JS' + Math.floor(Math.random() * 89999 + 10000),
+                    total: total,
+                    status: 'Pending',
+                    date: new Date().toLocaleDateString(),
+                    items: [...cart]
+                };
+                let history = JSON.parse(localStorage.getItem('jstore_history')) || [];
+                history.push(order);
+                localStorage.setItem('jstore_history', JSON.stringify(history));
+                cart = [];
+                actions.saveCart();
+                router.navigate('profile');
+                actions.toast('Order placed successfully!', 'success');
+            },
+            toast: (msg, type = 'info') => {
+                const toast = document.createElement('div');
+                toast.className = `fixed bottom-10 left-1/2 -translate-x-1/2 ${type === 'success' ? 'bg-green-600' : 'bg-dark'} text-white px-8 py-4 rounded-2xl shadow-2xl z-[100] transition-all transform translate-y-20 opacity-0`;
+                toast.innerText = msg;
+                document.body.appendChild(toast);
+                setTimeout(() => { toast.classList.remove('translate-y-20', 'opacity-0'); }, 100);
+                setTimeout(() => { 
+                    toast.classList.add('translate-y-20', 'opacity-0'); 
+                    setTimeout(() => toast.remove(), 500);
+                }, 3000);
+            }
+        };
+
+        // --- INIT ---
+        window.onload = () => {
+            actions.saveCart();
+            router.navigate('home');
+        };
+    </script>
+</body>
+</html>
+
